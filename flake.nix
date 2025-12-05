@@ -1,5 +1,5 @@
 rec {
-  description = "Description for the project";
+  description = "Issue hunter";
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -13,7 +13,7 @@ rec {
         ...
       }: let
         info = {
-          projectName = "issue-tracker";
+          projectName = "borzoi";
         };
       in
         ({
