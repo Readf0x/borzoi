@@ -1,5 +1,7 @@
 package main
 
+import "core:os/os2"
+import "core:strconv"
 import "core:math"
 import "core:strings"
 import "core:text/regex"
@@ -22,6 +24,14 @@ main :: proc() {
 	switch command {
 	case Commands.list:
 		list()
+	case Commands.open:
+		open()
+	case Commands.new:
+		new()
+	case Commands.cat:
+		cat()
+	case Commands.gen:
+		gen()
 	case Commands.help:
 		help(0)
 	}
@@ -29,12 +39,15 @@ main :: proc() {
 
 Commands :: enum {
 	list,
+	open,
+	cat,
+	new,
+	gen,
 	help,
 }
 
 list :: proc() {
-	issues := make([dynamic]Issue, 0, 128)
-	filepath.walk("./.borzoi", walk, &issues)
+	issues := getIssues()
 
 	max_title := 0
 	for issue in issues {
@@ -42,20 +55,31 @@ list :: proc() {
 	}
 	fmt.println(strings.concatenate({
 		BRIGHT_BLACK,
+		UNDERLINE, "id  ", NO_UNDERLINE, "  ",
 		UNDERLINE, "title", strings.repeat(" ", max_title-5), NO_UNDERLINE, "  ",
 		UNDERLINE, "status ", NO_UNDERLINE, "  ",
-		UNDERLINE, "uid            ", RESET
+		UNDERLINE, "creation date      ", RESET
 	}))
+	buf := make([]byte, 4)
 	for issue in issues {
+		id := strconv.write_uint(buf, u64(issue.id), 16)
 		status_string, _ := fmt.enum_value_to_string(issue.status)
 		fmt.println(
 			strings.concatenate({
+				strings.repeat("0", 4 - len(id)), id, "  ",
 				issue.title, strings.repeat(" ", max_title - len(issue.title)), "  ",
 				status_string, strings.repeat(" ", 3 - (len(status_string) - 4)), "  ",
-				issue.uid,
+				format_timestamp(issue.time),
 			}),
 		)
+		buf = {0,0,0,0}
 	}
+}
+
+getIssues :: proc(allocator := context.allocator, loc := #caller_location) -> [dynamic]Issue {
+	issues := make([dynamic]Issue, 0, 128, allocator, loc)
+	filepath.walk("./.borzoi", walk, &issues)
+	return issues
 }
 
 walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: os.Error, skip_dir: bool) {
@@ -63,24 +87,37 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 		fmt.println(in_err)
 		os.exit(1)
 	}
-	pattern, _ := regex.create_by_user(`/^\d{8}-\d{6}$/`)
+	pattern, _ := regex.create_by_user(`/^[0-9a-f]{4}$/`)
 	if _, success := regex.match(pattern, info.name); success {
 		data, err := os.read_entire_file_from_filename_or_err(strings.concatenate({ "./.borzoi/", info.name }))
 		if err != 0 {
 			fmt.println(err)
 			os.exit(1)
 		}
-		metadata := strings.split_lines_n(cast(string)data, 4)
+		metadata := strings.split_lines_n(cast(string)data, 6)
 
-		status, ok := fmt.string_to_enum_value(Status, metadata[1][10:])
-		if !ok {
-			fmt.printfln("%s:2:11: Invalid status '%s", info.fullpath, metadata[1][10:])
+		id, _ := strconv.parse_uint(info.name, 16)
+		status, enum_ok := fmt.string_to_enum_value(Status, metadata[1][10:])
+		if !enum_ok {
+			fmt.printfln("%s:2:11: Invalid status '%s'", info.fullpath, metadata[1][10:])
+			os.exit(1)
+		}
+		priority, atoi_ok := strconv.parse_uint(metadata[3][10:], 10)
+		if !atoi_ok {
+			fmt.printfln("%s:4:11: Invalid priority '%s'", info.fullpath, metadata[3][10:])
+			os.exit(1)
+		}
+		time, utc_offset, consumed := time.rfc3339_to_time_and_offset(metadata[4][10:])
+		if consumed == 0 {
+			fmt.printfln("%s:4:11: Invalid creation date '%s'", info.fullpath, metadata[4][10:])
 			os.exit(1)
 		}
 
 		append(cast (^[dynamic]Issue) user_data, Issue{
-			info.name,
-			metadata[0][2:], metadata[2][10:], metadata[3],
+			id,
+			metadata[0][2:], metadata[2][10:], metadata[5],
+			{ time, utc_offset },
+			priority,
 			status,
 		})
 	}
@@ -94,34 +131,141 @@ help :: proc(code: int) {
 local file issue tracker
 
 positional arguments:
-  {list,help}
+  {list,new,open,cat,gen,help}
     list  list issues
+    new   new issue
+    open  open issue in editor
+    cat   print issue
+    gen   generate issue from todo
     help  show this menu
 `)
 	os.exit(code)
 }
 
-format_timestamp :: proc(t: time.Time) -> string {
+open :: proc() {
+	if len(os.args) < 3 {
+		fmt.println("Missing id")
+		os.exit(1)
+	}
+	issuePath := strings.concatenate({ "./.borzoi/", os.args[2] })
+	_, err := os2.stat(issuePath, context.allocator)
+	if err != os2.ERROR_NONE {
+		switch err {
+		case .Not_Exist:
+			fmt.println("Issue doesn't exist")
+		case:
+			fmt.println(err)
+		}
+		os.exit(1)
+	}
+	editor(issuePath)
+}
+
+editor :: proc(path: string) {
+	editor := os.get_env("VISUAL")
+	if editor == "" {
+		editor = os.get_env("EDITOR")
+	}
+	env, _ := os2.environ(context.allocator)
+	pr, errr := os2.process_start(os2.Process_Desc{
+		".", { editor, path }, env, os2.stderr, os2.stdout, os2.stderr
+	})
+	if errr != os2.ERROR_NONE {
+		fmt.println(errr)
+		os.exit(1)
+	}
+	_, _ = os2.process_wait(pr)
+}
+
+new :: proc() {
+	os2.change_directory("./.borzoi")
+	files, err := os2.read_directory_by_path(".", 0, context.temp_allocator)
+	if err != os2.ERROR_NONE {
+		fmt.println(err)
+		os.exit(1)
+	}
+
+	max_id : uint = 0
+	for file in files {
+		pattern, _ := regex.create_by_user(`/^[0-9a-f]{4}$/`)
+		if _, success := regex.match(pattern, file.name); success {
+			id, _ := strconv.parse_uint(file.name, 16)
+			max_id = math.max(max_id, id)
+		}
+	}
+
+	buf := make([]byte, 4, context.temp_allocator)
+	idstr := strconv.write_uint(buf, u64(max_id+1), 16)
+
+	path := strings.concatenate({
+		strings.repeat("0", 4 - len(idstr)), idstr
+	})
+
+	file, errr := os2.create(path)
+	if errr != os2.ERROR_NONE {
+		fmt.println(errr)
+		os.exit(1)
+	}
+
+	_, stdout, _, _ := os2.process_exec({
+		".", { "git", "config", "user.name" }, nil, nil, nil, nil
+	}, context.allocator)
+
+	time, ok := time.time_to_rfc3339(time.now(), 0)
+	if !ok {
+		os.exit(1)
+	}
+
+	errrr := os2.write_entire_file(path,
+		transmute ([]byte)strings.concatenate({
+			"# \n"+
+			"- STATUS: Open\n"+
+			"- AUTHOR: ",
+			cast (string)stdout,
+			"- PRIORI: 1\n",
+			"- CRDATE: ",
+			time,
+			"\n",
+		})
+	)
+
+	editor(path)
+}
+
+gen :: proc() {
+}
+
+cat :: proc() {
+}
+
+format_timestamp :: proc(t: Time) -> string {
 	b: strings.Builder = strings.builder_make()
 
-	year, month, day := time.date(t)
-	hour, minute, sec := time.clock_from_time(t)
+	year, month, day := time.date(t.time)
+	hour, minute, sec := time.clock_from_time(t.time)
 
-	fmt.sbprintf(&b, "%d%d%d-%d%d%d", year, month, day, hour, minute, sec)
+	fmt.sbprintf(&b, "%4d-%2d-%2d %2d:%2d:%2d", year, month, day, hour, minute, sec)
 
 	return strings.to_string(b)
 }
 
 Issue :: struct {
-	uid: string,
+	id: uint,
 	title, author, body: string,
+	time: Time,
+	priority: uint,
 	status: Status,
 }
 
+Time :: struct {
+	time: time.Time,
+	utc_offset: int,
+}
+
 Status :: enum {
-	OPEN,
-	CLOSED,
-	WONTFIX,
+	Open,
+	Closed,
+	Wontfix,
 }
 
 format :: proc(str: string, codes: []string, allocator := context.allocator, loc := #caller_location) -> string {
@@ -134,41 +278,3 @@ format :: proc(str: string, codes: []string, allocator := context.allocator, loc
 	return strings.concatenate(parts, allocator, loc)
 }
 
-RESET             :: "\033[0m"
-BOLD              :: "\033[1m"
-DIM               :: "\033[2m"
-ITALIC            :: "\033[3m"
-UNDERLINE         :: "\033[4m"
-NO_UNDERLINE      :: "\033[24m"
-BLACK             :: "\033[30m"
-RED               :: "\033[31m"
-GREEN             :: "\033[32m"
-YELLOW            :: "\033[33m"
-BLUE              :: "\033[34m"
-MAGENTA           :: "\033[35m"
-CYAN              :: "\033[36m"
-WHITE             :: "\033[37m"
-BRIGHT_BLACK      :: "\033[90m"
-BRIGHT_RED        :: "\033[91m"
-BRIGHT_GREEN      :: "\033[92m"
-BRIGHT_YELLOW     :: "\033[93m"
-BRIGHT_BLUE       :: "\033[94m"
-BRIGHT_MAGENTA    :: "\033[95m"
-BRIGHT_CYAN       :: "\033[96m"
-BRIGHT_WHITE      :: "\033[97m"
-BG_BLACK          :: "\033[40m"
-BG_RED            :: "\033[41m"
-BG_GREEN          :: "\033[42m"
-BG_YELLOW         :: "\033[43m"
-BG_BLUE           :: "\033[44m"
-BG_MAGENTA        :: "\033[45m"
-BG_CYAN           :: "\033[46m"
-BG_WHITE          :: "\033[47m"
-BG_BRIGHT_BLACK   :: "\033[100m"
-BG_BRIGHT_RED     :: "\033[101m"
-BG_BRIGHT_GREEN   :: "\033[102m"
-BG_BRIGHT_YELLOW  :: "\033[103m"
-BG_BRIGHT_BLUE    :: "\033[104m"
-BG_BRIGHT_MAGENTA :: "\033[105m"
-BG_BRIGHT_CYAN    :: "\033[106m"
-BG_BRIGHT_WHITE   :: "\033[107m"
