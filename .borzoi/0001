@@ -1,6 +1,6 @@
-# Issue Name
+# Reorganize Codebase
 - STATUS: Open
 - AUTHOR: readf0x
 - PRIORI: 1
-- CRDATE: 2025-12-05 16:22:05-06:00
-body...
+- CRDATE: 2025-12-06T01:30:42.013864174Z
+Right now main.odin is ~300 lines, and it's becoming hard to manage.
