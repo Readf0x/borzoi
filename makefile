@@ -4,7 +4,7 @@ BINDIR ?= $(PREFIX)/bin
 VERSIONSTR ?= borzoi version 0.1.0, built from commit $$(git rev-parse --short HEAD) on $$(git branch --show-current)
 
 build:
-	odin build . -out:borzoi \
+	odin build src -out:borzoi \
 		-define:VERSION="$(VERSIONSTR)"
 
 install: build
