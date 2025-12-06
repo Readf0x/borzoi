@@ -52,7 +52,7 @@ list :: proc() {
 	}
 }
 open_only :: proc(issue: Issue) -> bool {
-	return issue.status == .Open
+	return issue.status == .Open || issue.status == .Ongoing
 }
 all :: proc(issue: Issue) -> bool {
 	return true
