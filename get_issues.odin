@@ -11,7 +11,7 @@ import "core:time"
 
 getIssues :: proc(sort: proc(a, b: Issue) -> bool = defaultIssueSort, allocator := context.allocator, loc := #caller_location) -> [dynamic]Issue {
 	issues := make([dynamic]Issue, 0, 128, allocator, loc)
-	filepath.walk("./.borzoi", walk, &issues)
+	filepath.walk(".", walk, &issues)
 	slice.sort_by(issues[:], sort)
 	return issues
 }
@@ -28,7 +28,7 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 	}
 	pattern, _ := regex.create_by_user(`/^[0-9a-f]{4}$/`)
 	if _, success := regex.match(pattern, info.name); success {
-		data, err := os.read_entire_file_from_filename_or_err(strings.concatenate({ "./.borzoi/", info.name }))
+		data, err := os.read_entire_file_from_filename_or_err(info.name)
 		if err != 0 {
 			fmt.println(err)
 			os.exit(1)
