@@ -16,25 +16,29 @@ main :: proc() {
 		help(1)
 	}
 
-	for !os2.exists(".borzoi") {
-		dir, err := os2.get_working_directory(context.allocator)
+	if command != .version && command != .init && command != .help {
+		for !os2.exists(".borzoi") {
+			dir, err := os2.get_working_directory(context.allocator)
+			if err != os2.ERROR_NONE {
+				fmt.println(err)
+				os.exit(1)
+			}
+			if dir == "/" {
+				fmt.println("No DB")
+				os.exit(1)
+			}
+			err = os2.change_directory("../")
+			if err != os2.ERROR_NONE {
+				fmt.println(err)
+				os.exit(1)
+			}
+		}
+
+		err := os2.change_directory(".borzoi")
 		if err != os2.ERROR_NONE {
 			fmt.println(err)
 			os.exit(1)
 		}
-		if dir == "/" {
-			fmt.println("No DB")
-		}
-		err = os2.change_directory("../")
-		if err != os2.ERROR_NONE {
-			fmt.println(err)
-			os.exit(1)
-		}
-	}
-	err := os2.change_directory(".borzoi")
-	if err != os2.ERROR_NONE {
-		fmt.println(err)
-		os.exit(1)
 	}
 
 	switch command {
