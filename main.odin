@@ -1,5 +1,6 @@
 package main
 
+import "core:slice"
 import "core:os/os2"
 import "core:strconv"
 import "core:math"
@@ -47,7 +48,16 @@ Commands :: enum {
 }
 
 list :: proc() {
-	issues := getIssues()
+	raw := getIssues()
+	issues: []Issue
+
+	if len(os.args) > 2 && os.args[2] == "-a" {
+		issues = slice.filter(raw[:], all)
+	} else {
+		issues = slice.filter(raw[:], open_only)
+	}
+
+	delete(raw)
 
 	max_title := 0
 	for issue in issues {
@@ -75,12 +85,26 @@ list :: proc() {
 		buf = {0,0,0,0}
 	}
 }
+open_only :: proc(issue: Issue) -> bool {
+	return issue.status == .Open
+}
+all :: proc(issue: Issue) -> bool {
+	return true
+}
 
-getIssues :: proc(allocator := context.allocator, loc := #caller_location) -> [dynamic]Issue {
+getIssues :: proc(sort: proc(a, b: Issue) -> bool = defaultIssueSort, allocator := context.allocator, loc := #caller_location) -> [dynamic]Issue {
 	issues := make([dynamic]Issue, 0, 128, allocator, loc)
 	filepath.walk("./.borzoi", walk, &issues)
+	slice.sort_by(issues[:], sort)
 	return issues
 }
+
+defaultIssueSort :: proc(a, b: Issue) -> bool {
+		if a.priority != b.priority {
+			return a.priority > b.priority
+		}
+		return a.id > b.id
+	}
 
 walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: os.Error, skip_dir: bool) {
 	if in_err != 0 {
@@ -107,7 +131,7 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 			fmt.printfln("%s:4:11: Invalid priority '%s'", info.fullpath, metadata[3][10:])
 			os.exit(1)
 		}
-		time, utc_offset, consumed := time.rfc3339_to_time_and_offset(metadata[4][10:])
+		time, consumed := time.rfc3339_to_time_utc(metadata[4][10:])
 		if consumed == 0 {
 			fmt.printfln("%s:4:11: Invalid creation date '%s'", info.fullpath, metadata[4][10:])
 			os.exit(1)
@@ -116,7 +140,7 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 		append(cast (^[dynamic]Issue) user_data, Issue{
 			id,
 			metadata[0][2:], metadata[2][10:], metadata[5],
-			{ time, utc_offset },
+			{ time, 0 },
 			priority,
 			status,
 		})
@@ -126,9 +150,10 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 
 help :: proc(code: int) {
 	fmt.print(
-`usage: borzoi {list,help}
+`usage: borzoi {list,new,open,cat,gen,help}
+        borzoi gen [FILES...]
 
-local file issue tracker
+flat file issue tracker
 
 positional arguments:
   {list,new,open,cat,gen,help}
@@ -143,6 +168,10 @@ positional arguments:
 }
 
 open :: proc() {
+	editor(getIssuePath())
+}
+
+getIssuePath :: proc() -> string {
 	if len(os.args) < 3 {
 		fmt.println("Missing id")
 		os.exit(1)
@@ -158,7 +187,7 @@ open :: proc() {
 		}
 		os.exit(1)
 	}
-	editor(issuePath)
+	return issuePath
 }
 
 editor :: proc(path: string) {
@@ -207,16 +236,30 @@ new :: proc() {
 		os.exit(1)
 	}
 
-	_, stdout, _, _ := os2.process_exec({
+	_, stdout, _, proc_err := os2.process_exec({
 		".", { "git", "config", "user.name" }, nil, nil, nil, nil
 	}, context.allocator)
+	if proc_err != os2.ERROR_NONE {
+		if proc_err == os2.General_Error.Not_Exist {
+			_, stdout, _, proc_err = os2.process_exec({
+				".", { "whoami" }, nil, nil, nil, nil
+			}, context.allocator)
+			if proc_err != os2.ERROR_NONE {
+				fmt.println(proc_err)
+				os.exit(1)
+			}
+		} else {
+			fmt.println(proc_err)
+			os.exit(1)
+		}
+	}
 
 	time, ok := time.time_to_rfc3339(time.now(), 0)
 	if !ok {
 		os.exit(1)
 	}
 
-	errrr := os2.write_entire_file(path,
+	file_err := os2.write_entire_file(path,
 		transmute ([]byte)strings.concatenate({
 			"# \n"+
 			"- STATUS: Open\n"+
@@ -236,6 +279,8 @@ gen :: proc() {
 }
 
 cat :: proc() {
+	data, _ := os2.read_entire_file_from_path(getIssuePath(), context.allocator)
+	fmt.print(cast (string)data)
 }
 
 format_timestamp :: proc(t: Time) -> string {
