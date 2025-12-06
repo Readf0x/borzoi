@@ -57,13 +57,8 @@ editor :: proc(path: string) {
 	err := start_process({ editor, path })
 }
 
-get_issue_path :: proc() -> string {
-	if len(os.args) < 3 {
-		fmt.println("Missing id")
-		os.exit(1)
-	}
-	issuePath := os.args[2]
-	_, err := os2.stat(issuePath, context.allocator)
+issue_exists :: proc(issue: string) -> string {
+	_, err := os2.stat(issue, context.allocator)
 	if err != os2.ERROR_NONE {
 		switch err {
 		case .Not_Exist:
@@ -73,6 +68,6 @@ get_issue_path :: proc() -> string {
 		}
 		os.exit(1)
 	}
-	return issuePath
+	return issue
 }
 
