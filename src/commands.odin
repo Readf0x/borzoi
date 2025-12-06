@@ -12,10 +12,11 @@ import "core:os"
 import "core:time"
 
 edit :: proc() {
-	editor(getIssuePath())
+	editor(get_issue_path())
 }
 
 gen :: proc() {
+	// Issue(0004): Implement gen command
 	fmt.println("WIP")
 }
 
@@ -27,16 +28,17 @@ init :: proc() {
 }
 
 cat :: proc() {
-	data, _ := os2.read_entire_file_from_path(getIssuePath(), context.allocator)
-	fmt.print(cast (string)data)
+	data, _ := os2.read_entire_file_from_path(get_issue_path(), context.allocator)
+	fmt.print(cast (string) data)
 }
 
 close :: proc() {
+	// Issue(0005): Implement close command
 	fmt.println("WIP")
 }
 
 list :: proc() {
-	raw := getIssues()
+	raw := get_issues()
 	issues: []Issue
 
 	if len(os.args) > 2 && os.args[2] == "-a" {
@@ -58,7 +60,7 @@ list :: proc() {
 	}
 
 	sep := "  "
-	if (posix.isatty(cast (posix.FD)os2.fd(os2.stdout))) {
+	if (posix.isatty(cast (posix.FD) os2.fd(os2.stdout))) {
 		fmt.println(strings.concatenate({
 			BRIGHT_BLACK,
 			UNDERLINE, "id  ", NO_UNDERLINE, "  ",
@@ -81,7 +83,7 @@ list :: proc() {
 				format_timestamp(issue.time),
 			}),
 		)
-		buf = {0,0,0,0}
+		buf = { 0, 0, 0, 0 }
 	}
 }
 open_only :: proc(issue: Issue) -> bool {
@@ -120,14 +122,10 @@ new :: proc() {
 		os.exit(1)
 	}
 
-	_, stdout, _, proc_err := os2.process_exec({
-		".", { "git", "config", "user.name" }, nil, nil, nil, nil
-	}, context.allocator)
+	stdout, proc_err := process_out({ "git", "config", "user.name" })
 	if proc_err != os2.ERROR_NONE {
 		if proc_err == os2.General_Error.Not_Exist {
-			_, stdout, _, proc_err = os2.process_exec({
-				".", { "whoami" }, nil, nil, nil, nil
-			}, context.allocator)
+			stdout, proc_err := process_out({ "whoami" })
 			if proc_err != os2.ERROR_NONE {
 				fmt.println(proc_err)
 				os.exit(1)
@@ -148,7 +146,7 @@ new :: proc() {
 			"# \n"+
 			"- STATUS: Open\n"+
 			"- AUTHOR: ",
-			cast (string)stdout,
+			cast (string) stdout,
 			"- PRIORI: 1\n",
 			"- CRDATE: ",
 			time,
@@ -159,7 +157,8 @@ new :: proc() {
 	editor(path)
 }
 
-// commit :: proc() {
-// 	start_process({ "git", "add", ".borzoi" })
-// 	start_process({ "git", "commit", "-m", "add issue" })
-// }
+commit :: proc() {
+	// Issue(0003): Implement commit command
+	fmt.println("WIP")
+}
+

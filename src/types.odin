@@ -10,7 +10,7 @@ Commands :: enum {
 	new,
 	gen,
 	close,
-	// commit,
+	commit,
 	version,
 	help,
 }

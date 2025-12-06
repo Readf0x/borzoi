@@ -39,6 +39,13 @@ start_process :: proc(command: []string, allocator := context.allocator) -> os2.
 	return os2.ERROR_NONE
 }
 
+process_out :: proc(command: []string, allocator := context.allocator) -> (stdout: []byte, err: os2.Error) {
+	_, stdout, _, err = os2.process_exec({
+		".", { "git", "config", "user.name" }, nil, nil, nil, nil
+	}, context.allocator)
+	return
+}
+
 editor :: proc(path: string) {
 	editor := os.get_env("VISUAL")
 	if editor == "" {
@@ -50,7 +57,7 @@ editor :: proc(path: string) {
 	err := start_process({ editor, path })
 }
 
-getIssuePath :: proc() -> string {
+get_issue_path :: proc() -> string {
 	if len(os.args) < 3 {
 		fmt.println("Missing id")
 		os.exit(1)

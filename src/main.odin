@@ -56,8 +56,8 @@ main :: proc() {
 		gen()
 	case .close:
 		close()
-	// case .commit:
-	// 	commit()
+	case .commit:
+		commit()
 	case .version:
 		version()
 	case .help:

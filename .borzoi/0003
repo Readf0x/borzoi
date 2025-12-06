@@ -1,0 +1,12 @@
+# Implement commit command
+- STATUS: Open
+- AUTHOR: readf0x
+- PRIORI: 2
+- CRDATE: 2025-12-06T19:03:23.6303873Z
+The commit command needs to cache the current staging area to `/tmp/`,
+stage the db, and commit with a generated commit message based on db changes.
+Should be something like `add issue: 0002` or
+`add issues: 0004, 0005; edit issue: 0002` Ideally we could also have borzoi
+deploy a git pre commit hook that makes sure the user has dealt with issues
+related to the commit but idk how to do that besides just asking "have you
+checked the issues?" or something.
