@@ -4,12 +4,13 @@ rec {
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
-  outputs = inputs @ {flake-parts, ...}:
+  outputs = inputs @ {self, flake-parts, ...}:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = ["x86_64-linux"];
       perSystem = {
         system,
         pkgs,
+        lib,
         ...
       }: let
         info = {
@@ -25,26 +26,25 @@ rec {
             ];
           };
           packages = {
-            ${projectName} = pkgs.stdenv.mkDerivation rec {
-              name = projectName;
-              pname = name;
-              version = "0.1";
+            ${projectName} = pkgs.stdenv.mkDerivation (final: {
+              pname = projectName;
+              version = "0.1.0";
+
               src = ./.;
+
               nativeBuildInputs = with pkgs; [ odin ];
               buildInputs = [];
-              buildPhase = ''
-                odin build . -out:${projectName}
-              '';
-              installPhase = ''
-                install -Dm555 ${projectName} $out/bin/${projectName}
-              '';
+
+              VERSIONSTR = "borzoi version ${final.version}, built from commit ${self.sourceInfo.shortRev or self.sourceInfo.dirtyShortRev} with nix";
+              DESTDIR = placeholder "out";
+              PREFIX = "";
+
               meta = {
                 inherit description;
-                # homepage = "";
-                # license = lib.licenses.;
-                # maintainers = with lib.maintainers; [  ];
+                homepage = "https://github.com/readf0x/borzoi";
+                license = lib.licenses.gpl3Only;
               };
-            };
+            });
             default = packages.${projectName};
           };
         })

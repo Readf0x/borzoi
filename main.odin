@@ -30,6 +30,8 @@ main :: proc() {
 		gen()
 	case .close:
 		close()
+	case .version:
+		version()
 	case .help:
 		help(0)
 	}
@@ -42,26 +44,35 @@ Commands :: enum {
 	new,
 	gen,
 	close,
+	version,
 	help,
 }
 
 help :: proc(code: int) {
 	fmt.print(
-`usage: borzoi {list,new,open,cat,gen,help}
+`usage: borzoi {list,new,open,cat,gen,close,version,help}
        borzoi gen [FILES...]
 
 flat file issue tracker
 
 positional arguments:
-  {list,new,open,cat,gen,help}
-    list  list issues
-    new   new issue
-    open  open issue in editor
-    cat   print issue
-    gen   generate issue from todo
-    help  show this menu
+  {list,new,open,cat,gen,close,version,help}
+    list     list issues
+    new      new issue
+    open     open issue in editor
+    cat      print issue
+    gen      generate issue from todo
+    close    close issue
+    version  print version
+    help     show this menu
 `)
 	os.exit(code)
+}
+
+versionInfo: string : #config(VERSION, "Not defined")
+version :: proc() {
+	fmt.println(versionInfo)
+	os.exit(0)
 }
 
 open :: proc() {
