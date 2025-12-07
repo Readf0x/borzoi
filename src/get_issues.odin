@@ -56,9 +56,14 @@ issue_from_path :: proc(path: string) -> Issue {
 		os.exit(1)
 	}
 
+	body := metadata[5]
+	if body == "" {
+		body = BRIGHT_BLACK + "<Empty body>" + RESET
+	}
+
 	return {
 		id,
-		metadata[0][2:], metadata[2][10:], metadata[5],
+		metadata[0][2:], metadata[2][10:], body,
 		{ time, 0 },
 		priority,
 		status,
