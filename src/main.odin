@@ -1,5 +1,6 @@
 package main
 
+import "core:sys/posix"
 import "core:os/os2"
 import "core:fmt"
 import "core:os"
@@ -15,6 +16,8 @@ main :: proc() {
 	if !exists {
 		help(1)
 	}
+
+	intty = cast (bool) posix.isatty(cast (posix.FD) os2.fd(os2.stdout))
 
 	if command != .version && command != .init && command != .help {
 		for !os2.exists(".borzoi") {

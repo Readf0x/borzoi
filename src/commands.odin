@@ -38,10 +38,30 @@ cat :: proc() {
 		fmt.println("Missing id")
 		os.exit(1)
 	}
-	for issue in os.args[2:] {
-		data, _ := os2.read_entire_file_from_path(issue_exists(issue), context.allocator)
-		fmt.println(strings.concatenate({ BOLD, YELLOW, "Issue ", issue, RESET }))
-		fmt.print(cast (string) data)
+	for path in os.args[2:] {
+		issue := issue_from_path(issue_exists(path))
+		status, _ := color_status(issue.status)
+		if (intty) {
+			fmt.printf(
+				"%s%s%s %4X %s%s%s%s\n" +
+				"%sStatus: %s%s%s  Author: %s%s%s  Priority: %s%d%s  Created: %s%s\n\n%s\n",
+
+				BG_BLUE, BRIGHT_BLACK, BOLD, issue.id, BLACK, issue.title,
+				strings.repeat(" ",
+					math.max(80-len(issue.title), 0)+1
+				),
+				RESET,
+
+				BRIGHT_BLACK, RESET, status, BRIGHT_BLACK,
+				RESET, issue.author, BRIGHT_BLACK,
+				RESET, issue.priority, BRIGHT_BLACK,
+				RESET, format_timestamp(issue.time),
+
+				issue.body,
+			)
+		} else {
+			fmt.print(issue.body)
+		}
 	}
 }
 
@@ -73,7 +93,6 @@ list :: proc() {
 	}
 
 	sep := "  "
-	intty := posix.isatty(cast (posix.FD) os2.fd(os2.stdout))
 	if (intty) {
 		fmt.println(strings.concatenate({
 			BRIGHT_BLACK,
