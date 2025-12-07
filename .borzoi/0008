@@ -1,0 +1,7 @@
+# Cat word wrapping
+- STATUS: Open
+- AUTHOR: readf0x
+- PRIORI: 1
+- CRDATE: 2025-12-07T01:56:58.93881996Z
+Right now we depend on issues wrapping themselves, which may not always be the
+case. We should remove all `\n`s from the body and wrap it ourselves.
