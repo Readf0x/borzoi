@@ -11,6 +11,7 @@ Commands :: enum {
 	gen,
 	close,
 	commit,
+	delete,
 	version,
 	help,
 }

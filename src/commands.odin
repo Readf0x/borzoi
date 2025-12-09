@@ -195,3 +195,18 @@ commit :: proc() {
 	fmt.println("WIP")
 }
 
+delete_issue :: proc() {
+	if len(os.args) < 3 {
+		fmt.println("Missing id")
+		os.exit(1)
+	}
+	for id in os.args[2:] {
+		path := issue_exists(id)
+		err := os2.remove(path)
+		if err != os2.ERROR_NONE {
+			fmt.println(err)
+			os.exit(1)
+		}
+	}
+}
+

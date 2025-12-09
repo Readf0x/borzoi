@@ -61,6 +61,8 @@ main :: proc() {
 		close()
 	case .commit:
 		commit()
+	case .delete:
+		delete_issue()
 	case .version:
 		version()
 	case .help:
