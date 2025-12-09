@@ -15,7 +15,7 @@ edit :: proc() {
 		os.exit(1)
 	}
 	for issue in os.args[2:] {
-		editor(issue_exists(issue))
+		editor(issue_exists(strings.to_upper(issue)))
 	}
 }
 
