@@ -1,5 +1,6 @@
 package main
 
+import "core:math/rand"
 import "core:os/os2"
 import "core:sys/posix"
 import "core:slice"
@@ -22,7 +23,7 @@ edit :: proc() {
 }
 
 gen :: proc() {
-	// Issue(0004): Implement gen command
+	// Issue(DE2E): Implement gen command
 	fmt.println("WIP")
 }
 
@@ -43,8 +44,8 @@ cat :: proc() {
 		status, _ := color_status(issue.status)
 		if (intty) {
 			fmt.printf(
-				"%s%s%s %4X %s%s%s%s\n" +
-				"%sStatus: %s%s%s  Author: %s%s%s  Priority: %s%d%s  Created: %s%s\n\n%s\n",
+				"\n%s%s%s %4X %s%s%s%s\n" +
+				"%sStatus: %s%s%s  Author: %s%s%s  Priority: %s%d%s  Created: %s%s\n\n%s",
 
 				BG_BLUE, BRIGHT_BLACK, BOLD, issue.id, BLACK, issue.title,
 				strings.repeat(" ",
@@ -66,7 +67,7 @@ cat :: proc() {
 }
 
 close :: proc() {
-	// Issue(0005): Implement close command
+	// Issue(4BF8): Implement close command
 	fmt.println("WIP")
 }
 
@@ -106,8 +107,7 @@ list :: proc() {
 	}
 	buf := make([]byte, 4)
 	for issue in issues {
-		id := strconv.write_uint(buf, u64(issue.id), 16)
-		id = strings.concatenate({ strings.repeat("0", 4 - len(id)), id })
+		id := fmt.bprintf(buf, "%4X", issue.id)
 		status_string: string
 		status_string_len: int
 		if (intty) {
@@ -142,17 +142,19 @@ new :: proc() {
 		os.exit(1)
 	}
 
-	max_id : uint = 0
-	for file in files {
-		pattern, _ := regex.create_by_user(`/^[0-9a-f]{4}$/`)
-		if _, success := regex.match(pattern, file.name); success {
-			id, _ := strconv.parse_uint(file.name, 16)
-			max_id = math.max(max_id, id)
-		}
-	}
+	now := cast (u64) time.now()._nsec
+	rand.reset(now)
+	rand_id := rand.uint32()
 
 	buf := make([]byte, 4, context.temp_allocator)
-	idstr := strconv.write_uint(buf, u64(max_id+1), 16)
+	idstr := strconv.write_uint(buf, u64(rand_id & 0x0000FFFF), 16)
+
+	for os2.exists(idstr) {
+		now += 1
+		rand.reset(cast (u64) now)
+		rand_id = rand.uint32()
+		idstr = strconv.write_uint(buf, u64(rand_id & 0x0000FFFF), 16)
+	}
 
 	path := strings.concatenate({
 		strings.repeat("0", 4 - len(idstr)), idstr
@@ -200,7 +202,7 @@ new :: proc() {
 }
 
 commit :: proc() {
-	// Issue(0003): Implement commit command
+	// Issue(0445): Implement commit command
 	fmt.println("WIP")
 }
 

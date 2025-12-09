@@ -1,17 +1,16 @@
 package main
 
-import "core:sys/posix"
 import "core:os/os2"
 import "core:strings"
 import "core:fmt"
 import "core:os"
 import "core:time"
 
-format_timestamp :: proc(t: Time) -> string {
+format_timestamp :: proc(t: time.Time) -> string {
 	b: strings.Builder = strings.builder_make()
 
-	year, month, day := time.date(t.time)
-	hour, minute, sec := time.clock_from_time(t.time)
+	year, month, day := time.date(t)
+	hour, minute, sec := time.clock_from_time(t)
 
 	fmt.sbprintf(&b, "%4d-%2d-%2d %2d:%2d:%2d", year, month, day, hour, minute, sec)
 
