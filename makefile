@@ -7,5 +7,9 @@ build:
 	odin build src -out:borzoi \
 		-define:VERSION="$(VERSIONSTR)"
 
+debug:
+	odin build src -debug -out:borzoi \
+		-define:VERSION="$(VERSIONSTR)"
+
 install: build
 	install -Dm755 borzoi "$(DESTDIR)$(BINDIR)/borzoi"
