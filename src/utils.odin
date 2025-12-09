@@ -75,7 +75,8 @@ editor :: proc(path: string) {
 }
 
 issue_exists :: proc(issue: string) -> string {
-	_, err := os2.stat(issue, context.allocator)
+	path := strings.concatenate({ issue, ".md" })
+	_, err := os2.stat(path, context.allocator)
 	if err != os2.ERROR_NONE {
 		switch err {
 		case .Not_Exist:
@@ -85,7 +86,7 @@ issue_exists :: proc(issue: string) -> string {
 		}
 		os.exit(1)
 	}
-	return issue
+	return path
 }
 
 intty: bool

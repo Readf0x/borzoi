@@ -27,17 +27,17 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 		fmt.println(in_err)
 		os.exit(1)
 	}
-	pattern, _ := regex.create_by_user(`/^[0-9A-F]{4}$/`)
+	pattern, _ := regex.create_by_user(`/^[0-9A-F]{4}\.md$/`)
 	if _, success := regex.match(pattern, info.name); success {
-		append(cast (^[dynamic]Issue) user_data, issue_from_path(info.name))
+		append(cast (^[dynamic]Issue) user_data, issue_from_idstr(info.name[:4]))
 	}
 	return
 }
-issue_from_path :: proc(path: string) -> Issue {
-	data, _ := os2.read_entire_file_from_path(issue_exists(path), context.allocator)
+issue_from_idstr :: proc(idstr: string) -> Issue {
+	data, _ := os2.read_entire_file_from_path(issue_exists(idstr), context.allocator)
 	metadata := strings.split_lines_n(cast (string) data, 6)
 
-	id, ok := strconv.parse_uint(path, 16)
+	id, ok := strconv.parse_uint(idstr[:4], 16)
 	fullpath, _ := os2.get_working_directory(context.allocator)
 
 	status, enum_ok := fmt.string_to_enum_value(Status, metadata[1][10:])
