@@ -60,26 +60,26 @@ main :: proc() {
 
 help :: proc(code: int) {
 	fmt.print(
-`usage: borzoi {init,list,new,commit,version,help}
-       borzoi {edit,cat,close,delete} [ISSUES...]
-       borzoi gen [FILES...]
+		"usage: borzoi {init,list,new,commit,version,help}\n" +
+		"       borzoi {edit,cat,close,delete} [ISSUES...]\n" +
+		"       borzoi gen [FILES...]\n\n" +
 
-flat file issue tracker
+		"flat file issue tracker\n\n" +
 
-positional arguments:
-  {init,list,new,edit,cat,gen,close,commit,delete,version,help}
-    init     initialize repository
-    list     list issues
-    new      new issue
-    edit     open issue in editor
-    cat      print issue
-    gen      generate issue from todo
-    close    close issue
-    commit   commit changes
-    delete   delete issue
-    version  print version
-    help     show this menu
-`)
+		"positional arguments:\n" +
+		"  {init,list,new,edit,cat,gen,close,commit,delete,version,help}\n" +
+		"    init     initialize repository\n" +
+		"    list     list issues\n" +
+		"    new      new issue\n" +
+		"    edit     open issue in editor\n" +
+		"    cat      print issue\n" +
+		"    gen      generate issue from todo\n" +
+		"    close    close issue\n" +
+		"    commit   commit changes\n" +
+		"    delete   delete issue\n" +
+		"    version  print version\n" +
+		"    help     show this menu"
+	)
 	os.exit(code)
 }
 
