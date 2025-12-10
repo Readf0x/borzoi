@@ -20,7 +20,7 @@ default_issue_sort :: proc(a, b: Issue) -> bool {
 	if a.priority != b.priority {
 		return a.priority > b.priority
 	}
-	return a.time._nsec > b.time._nsec
+	return a.time.time._nsec > b.time.time._nsec
 }
 walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: os.Error, skip_dir: bool) {
 	handle(in_err != 0, in_err)
@@ -30,6 +30,7 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 	}
 	return
 }
+
 issue_from_idstr :: proc(idstr: string) -> Issue {
 	data, _ := os2.read_entire_file_from_path(issue_exists(idstr), context.allocator)
 	metadata := strings.split_lines_n(cast (string) data, 6)
@@ -61,8 +62,27 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 	return {
 		id,
 		metadata[0][2:], metadata[2][10:], body,
-		time,
+		{ time, 0 },
 		priority,
 		status,
 	}
+}
+
+issue_to_string :: proc(issue: Issue, allocator := context.allocator) -> string {
+	b := strings.builder_make(allocator)
+	timestr, _ := time.time_to_rfc3339(issue.time.time, issue.time.utc_offset, false)
+	fmt.sbprintf(&b,
+		"# %s\n" +
+		"- STATUS: %v\n" +
+		"- AUTHOR: %s\n" +
+		"- PRIORI: %d\n" +
+		"- CRDATE: %s\n%s",
+		issue.title,
+		issue.status,
+		issue.author,
+		issue.priority,
+		timestr,
+		issue.body
+	)
+	return strings.to_string(b)
 }

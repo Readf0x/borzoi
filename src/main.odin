@@ -82,6 +82,7 @@ positional arguments:
 
 versionInfo: string : #config(VERSION, "Not defined")
 version :: proc() {
+	when ODIN_DEBUG do fmt.printfln("%s%s%s", RED, "debug build", RESET)
 	fmt.println(versionInfo)
 	os.exit(0)
 }
