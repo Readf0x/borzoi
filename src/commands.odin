@@ -1,5 +1,6 @@
 package main
 
+import "base:runtime"
 import "core:math/rand"
 import "core:os/os2"
 import "core:slice"
@@ -10,10 +11,7 @@ import "core:os"
 import "core:time"
 
 edit :: proc() {
-	if len(os.args) < 3 {
-		fmt.println("Missing id")
-		os.exit(1)
-	}
+	handle(len(os.args) < 3, "Missing id")
 	for issue in os.args[2:] {
 		editor(issue_exists(strings.to_upper(issue)))
 	}
@@ -26,16 +24,11 @@ gen :: proc() {
 
 init :: proc() {
 	err := os2.mkdir(".borzoi")
-	if err != os2.ERROR_NONE {
-		fmt.println(err)
-	}
+	handle(err != os2.ERROR_NONE, err)
 }
 
 cat :: proc() {
-	if len(os.args) < 3 {
-		fmt.println("Missing id")
-		os.exit(1)
-	}
+	handle(len(os.args) < 3, "Missing id")
 	for path in os.args[2:] {
 		issue := issue_from_idstr(strings.to_upper(path))
 		status, _ := color_status(issue.status)
@@ -135,10 +128,7 @@ all :: proc(issue: Issue) -> bool {
 
 new :: proc() {
 	files, err := os2.read_directory_by_path(".", 0, context.temp_allocator)
-	if err != os2.ERROR_NONE {
-		fmt.println(err)
-		os.exit(1)
-	}
+	handle(err != os2.ERROR_NONE, err)
 
 	now := cast (u64) time.now()._nsec
 	rand.reset(now)
@@ -159,20 +149,13 @@ new :: proc() {
 	if proc_err != os2.ERROR_NONE {
 		if proc_err == os2.General_Error.Not_Exist {
 			stdout, proc_err := process_out({ "whoami" })
-			if proc_err != os2.ERROR_NONE {
-				fmt.println(proc_err)
-				os.exit(1)
-			}
+			handle(proc_err != os2.ERROR_NONE, proc_err)
 		} else {
-			fmt.println(proc_err)
-			os.exit(1)
+			handle(true, proc_err)
 		}
 	}
 
-	time, ok := time.time_to_rfc3339(time.now(), 0)
-	if !ok {
-		os.exit(1)
-	}
+	time, _ := time.time_to_rfc3339(time.now(), 0)
 
 	file_err := os2.write_entire_file(path,
 		transmute ([]byte)strings.concatenate({
@@ -191,22 +174,79 @@ new :: proc() {
 }
 
 commit :: proc() {
-	// Issue(0445): Implement commit command
-	fmt.println("WIP")
+	env, _ := os2.environ(context.allocator)
+
+	pipe_r, pipe_w, err := os2.pipe()
+	handle(err != os2.ERROR_NONE, err)
+
+	// reset DB just in case
+	err = process_custom({
+		".", { "git", "reset", "." }, env, os2.stderr, nil, nil
+	})
+	handle(err != os2.ERROR_NONE, err)
+
+	// store staging index in pipe
+	err = process_custom({
+		"..", { "git", "diff", "--cached" }, env, os2.stderr, pipe_w, nil
+	})
+	handle(err != os2.ERROR_NONE, err)
+
+	// reset index
+	err = process_custom({
+		"..", { "git", "reset" }, env, os2.stderr, nil, nil
+	})
+	handle(err != os2.ERROR_NONE, err)
+
+	porcelain, p_err := process_out({ "git", "status", "--porcelain", "." })
+	handle(p_err != os2.ERROR_NONE, p_err)
+
+	edited := make([dynamic]string, 0, 8)
+	created := make([dynamic]string, 0, 8)
+	for status in strings.split_iterator(cast (^string) &porcelain, "\n") {
+		id := status[len(status)-7:len(status)-3]
+		switch status[:2] {
+		case " M":
+			append(&edited, id)
+		case "??":
+			append(&created, id)
+		case:
+			handle(true, status)
+		}
+	}
+
+	message := strings.builder_make()
+	if len(created) != 0 {
+		strings.write_string(&message, "created issue")
+		if len(created) > 1 do strings.write_string(&message, "s")
+		strings.write_string(&message, ": ")
+		strings.write_string(&message, strings.join(created[:], ", "))
+	}
+	if len(created) != 0 && len(edited) != 0 {
+		strings.write_string(&message, "; ")
+	}
+	if len(edited) != 0 {
+		strings.write_string(&message, "edited issue")
+		if len(edited) > 1 do strings.write_string(&message, "s")
+		strings.write_string(&message, ": ")
+		strings.write_string(&message, strings.join(edited[:], ", "))
+	}
+
+	start_process({ "git", "add", "." })
+	start_process({ "git", "commit", "-m", strings.to_string(message) })
+
+	// reapply old index
+	apply_pr, apply_err := os2.process_start({
+		"..", { "git", "apply", "--cached", "--allow-empty" }, env, os2.stderr, nil, pipe_r
+	})
+	handle(apply_err != os2.ERROR_NONE, apply_err)
 }
 
 delete_issue :: proc() {
-	if len(os.args) < 3 {
-		fmt.println("Missing id")
-		os.exit(1)
-	}
+	handle(len(os.args) < 3, "Missing id")
 	for id in os.args[2:] {
 		path := issue_exists(id)
 		err := os2.remove(path)
-		if err != os2.ERROR_NONE {
-			fmt.println(err)
-			os.exit(1)
-		}
+		handle(err != os2.ERROR_NONE, err)
 	}
 }
 

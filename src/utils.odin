@@ -47,7 +47,7 @@ color_status :: proc(status: Status) -> (formatted: string, length: int) {
 start_process :: proc(command: []string, allocator := context.allocator) -> os2.Error {
 	env, _ := os2.environ(context.allocator)
 	pr, err := os2.process_start(os2.Process_Desc{
-		".", command, env, os2.stderr, os2.stdout, os2.stderr
+		".", command, env, os2.stderr, os2.stdout, nil
 	})
 	if err != os2.ERROR_NONE {
 		return err
@@ -58,9 +58,22 @@ start_process :: proc(command: []string, allocator := context.allocator) -> os2.
 
 process_out :: proc(command: []string, allocator := context.allocator) -> (stdout: []byte, err: os2.Error) {
 	_, stdout, _, err = os2.process_exec({
-		".", { "git", "config", "user.name" }, nil, nil, nil, nil
+		".", command, nil, nil, nil, nil
 	}, context.allocator)
 	return
+}
+
+process_custom :: proc(desc: os2.Process_Desc) -> os2.Error {
+	pr, err := os2.process_start(desc)
+	if err != os2.ERROR_NONE {
+		return err
+	}
+	_, _ = os2.process_wait(pr)
+	err = os2.process_close(pr)
+	if err != os2.ERROR_NONE {
+		return err
+	}
+	return os2.ERROR_NONE
 }
 
 editor :: proc(path: string) {
@@ -88,6 +101,14 @@ issue_exists :: proc(issue: string) -> string {
 	}
 	return path
 }
+
+handle :: proc(when_this: bool, err: any, loc := #caller_location) {
+	assert(!when_this, fmt.bprintf(make([]byte, 256), "%v", err), loc)
+}
+
+// handlef :: proc(assertion:bool, format: string, err: any, loc := #caller_location) {
+// 	assert(assertion, fmt.bprintf(make([]byte, 256), format, err), loc)
+// }
 
 intty: bool
 
