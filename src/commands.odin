@@ -259,7 +259,7 @@ commit :: proc() {
 delete_issue :: proc() {
 	handle(len(os.args) < 3, "Missing id")
 	for id in os.args[2:] {
-		path := issue_exists(id)
+		path := issue_exists(strings.to_upper(id))
 		err := os2.remove(path)
 		handle(err != os2.ERROR_NONE, err)
 	}
