@@ -8,7 +8,7 @@ complete -c borzoi -n "__fish_seen_subcommand_from list" -s a -d "list all issue
 
 # Commands that take issue IDs
 for cmd in edit cat close delete
-    complete -c borzoi -n "__fish_seen_subcommand_from $cmd" -f -a "(__borzoi_issues)" -d "issue ID"
+    complete -c borzoi -n "__fish_seen_subcommand_from $cmd" -f -a "(__borzoi_issues)"
 end
 
 # gen command takes files
