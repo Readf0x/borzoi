@@ -1,0 +1,61 @@
+.TH BORZOI 1 "December 2025" "borzoi 0.1.0" "User Commands"
+.SH NAME
+borzoi \- flat file issue tracker
+.SH SYNOPSIS
+.B borzoi
+.RI { init | list | new | commit | version | help }
+.br
+.B borzoi
+.RI { edit | cat | close | delete }
+.IR [ISSUES...]
+.br
+.B borzoi gen
+.RI [FILES...]
+.SH DESCRIPTION
+.B borzoi
+is a CLI issue tracker that stores issues in human readable plaintext files
+that can be shipped alongside source code, designed for git repos that lack a
+dedicated frontend.
+.SH COMMANDS
+.TP
+.B init
+Initialize a new borzoi repository by creating a .borzoi directory.
+.TP
+.B list
+List all open issues. Use
+.B -a
+to list all issues including closed ones.
+.TP
+.B new
+Create a new issue. Opens the issue in your default editor for editing.
+.TP
+.B edit
+.IR ISSUES...
+Open the specified issues in your default editor for editing.
+.TP
+.B cat
+.IR ISSUES...
+Print the content of the specified issues to stdout.
+.TP
+.B gen
+Generate issues from TODO comments in source files (work in progress).
+.TP
+.B close
+.IR ISSUES...
+Mark the specified issues as closed.
+.TP
+.B commit
+Commit changes to issues using git. Automatically generates commit messages
+based on created and edited issues.
+.TP
+.B delete
+.IR ISSUES...
+Delete the specified issues.
+.TP
+.B version
+Print version information.
+.TP
+.B help
+Show help message.
+.SH SEE ALSO
+The borzoi repository: https://github.com/readf0x/borzoi
