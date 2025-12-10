@@ -10,6 +10,7 @@ import "core:time"
 format_timestamp :: proc(t: time.Time) -> string {
 	b: strings.Builder = strings.builder_make()
 
+	// Issue(BE38): Local time formatting
 	year, month, day := time.date(t)
 	hour, minute, sec := time.clock_from_time(t)
 
@@ -89,7 +90,7 @@ issue_exists :: proc(issue: string) -> string {
 	handle(err != os2.ERROR_NONE, proc(err: rawptr) {
 		switch (cast (^os2.Error) err)^ {
 		case .Not_Exist:
-			fmt.println("Issue doesn't exist")
+			fmt.println("No such issue")
 		case:
 			fmt.println(err)
 		}

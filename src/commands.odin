@@ -154,31 +154,25 @@ new :: proc() {
 		path = fmt.bprintf(buf, "%4X.md", rand_id & 0x0000FFFF)
 	}
 
-	stdout, proc_err := process_out({ "git", "config", "user.name" })
+	username, proc_err := process_out({ "git", "config", "user.name" })
 	if proc_err != os2.ERROR_NONE {
 		if proc_err == os2.General_Error.Not_Exist {
-			stdout, proc_err := process_out({ "whoami" })
+			username, proc_err = process_out({ "whoami" })
 			handle(proc_err != os2.ERROR_NONE, proc_err)
 		} else {
 			handle(true, proc_err)
 		}
 	}
+	username = username[:len(username) - 1]
 
-	timestr, _ := time.time_to_rfc3339(time.now(), 0, false)
+	issuestr := issue_to_string(Issue{
+		author = cast (string) username,
+		// Issue(BE38): Local time formatting
+		time = { time.now(), 0 },
+		priority = 1,
+	})
 
-	// Issue(32D0): Use issue_to_string in new
-	file_err := os2.write_entire_file(path,
-		transmute ([]byte)strings.concatenate({
-			"# \n"+
-			"- STATUS: Open\n"+
-			"- AUTHOR: ",
-			cast (string) stdout,
-			"- PRIORI: 1\n",
-			"- CRDATE: ",
-			timestr,
-			"\n",
-		})
-	)
+	file_err := os2.write_entire_file(path, transmute ([]byte) issuestr)
 
 	editor(path)
 }

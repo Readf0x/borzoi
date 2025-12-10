@@ -48,7 +48,7 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 		fmt.printfln("%s:4:11: Invalid priority '%s'", fullpath, metadata[3][10:])
 		os.exit(1)
 	}
-	time, consumed := time.rfc3339_to_time_utc(metadata[4][10:])
+	time, offset, consumed := time.rfc3339_to_time_and_offset(metadata[4][10:])
 	if consumed == 0 {
 		fmt.printfln("%s:4:11: Invalid creation date '%s'", fullpath, metadata[4][10:])
 		os.exit(1)
@@ -62,7 +62,7 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 	return {
 		id,
 		metadata[0][2:], metadata[2][10:], body,
-		{ time, 0 },
+		{ time, offset },
 		priority,
 		status,
 	}
