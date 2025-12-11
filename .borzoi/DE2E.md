@@ -1,7 +1,9 @@
 # Implement gen command
 - STATUS: Open
-- AUTHOR: readf0x
 - PRIORI: 4
+- ASSIGN: 
+- LABELS: 
+- AUTHOR: readf0x
 - CRDATE: 2025-12-06T19:12:32Z
 The generate command should search through specified files (or all files if none
 are specified), create issues based on todo comments, and edit the todo comments

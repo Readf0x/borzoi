@@ -1,9 +1,9 @@
 package main
 
+import "core:slice"
 import "base:runtime"
 import "core:math/rand"
 import "core:os/os2"
-import "core:slice"
 import "core:math"
 import "core:strings"
 import "core:fmt"
@@ -71,17 +71,78 @@ close :: proc() {
 	}
 }
 
+list_filter: List_Filter
 list :: proc() {
-	raw := get_issues()
-	issues: []Issue
-
-	if len(os.args) > 2 && os.args[2] == "-a" {
-		issues = slice.filter(raw[:], all)
-	} else {
-		issues = slice.filter(raw[:], open_only)
+	args: List_Args = {
+		max_priority = max(uint),
+		created_after = {max(i64)},
 	}
 
-	delete(raw)
+	list_filter = list_args_parse(&args)
+
+	raw := get_issues()
+
+	issues := slice.filter(raw[:], proc(issue: Issue) -> bool {
+		if issue.status not_in list_filter.statuses do return false
+		if len(list_filter.title) != 0 {
+			if !strings.contains(issue.title, list_filter.title) do return false
+		}
+		if len(list_filter.body) != 0 {
+			if !strings.contains(issue.body, list_filter.body) do return false
+		}
+		if issue.priority < list_filter.priority_range[0] ||
+			 issue.priority > list_filter.priority_range[1] { return false }
+
+		if issue.time.time._nsec < list_filter.date_range[0]._nsec ||
+			 issue.time.time._nsec > list_filter.date_range[1]._nsec { return false }
+
+		if len(list_filter.authors) != 0 {
+			if !slice.contains(list_filter.authors, issue.author) do return false
+		}
+		// side effect of splitting and leaving the empty string, length is never zero.
+		if len(list_filter.assignees) != 0 {
+			for assignee in list_filter.assignees {
+				if !slice.contains(issue.assignees, assignee) do return false
+			}
+		}
+		if len(list_filter.labels) != 0 {
+			for label in list_filter.labels {
+				if !slice.contains(issue.labels, label) do return false
+			}
+		}
+		return true
+	})
+
+	// this code is ugly, but unfortunately it's the most efficient way I can think of...
+	sortproc: proc(a, b: Issue) -> bool
+	if list_filter.reverse {
+		switch list_filter.sort {
+		case .priority:
+			sortproc = proc(a, b: Issue) -> bool {
+				if a.priority == b.priority do return a.time.time._nsec < b.time.time._nsec
+				return a.priority < b.priority
+			}
+		case .date:
+			sortproc = proc(a, b: Issue) -> bool {
+				return a.time.time._nsec < b.time.time._nsec
+			}
+		}
+	} else {
+		switch list_filter.sort {
+		case .priority:
+			sortproc = proc(a, b: Issue) -> bool {
+				if a.priority == b.priority do return a.time.time._nsec > b.time.time._nsec
+				return a.priority > b.priority
+			}
+		case .date:
+			sortproc = proc(a, b: Issue) -> bool {
+				return a.time.time._nsec > b.time.time._nsec
+			}
+		}
+	}
+	slice.sort_by(issues, sortproc)
+
+	// delete(raw)
 
 	if len(issues) == 0 {
 		fmt.println("No issues.")
@@ -128,12 +189,6 @@ list :: proc() {
 		buf = { 0, 0, 0, 0 }
 	}
 }
-open_only :: proc(issue: Issue) -> bool {
-	return issue.status == .Open || issue.status == .Ongoing
-}
-all :: proc(issue: Issue) -> bool {
-	return true
-}
 
 new :: proc() {
 	files, err := os2.read_directory_by_path(".", 0, context.temp_allocator)
@@ -154,16 +209,8 @@ new :: proc() {
 		path = fmt.bprintf(buf, "%4X.md", rand_id & 0x0000FFFF)
 	}
 
-	username, proc_err := process_out({ "git", "config", "user.name" })
-	if proc_err != os2.ERROR_NONE {
-		if proc_err == os2.General_Error.Not_Exist {
-			username, proc_err = process_out({ "whoami" })
-			handle(proc_err != os2.ERROR_NONE, proc_err)
-		} else {
-			handle(true, proc_err)
-		}
-	}
-	username = username[:len(username) - 1]
+	username, u_err := get_username()
+	handle(u_err != os2.ERROR_NONE, u_err)
 
 	issuestr := issue_to_string(Issue{
 		author = cast (string) username,
@@ -211,6 +258,7 @@ commit :: proc() {
 
 	edited := make([dynamic]string, 0, 8)
 	created := make([dynamic]string, 0, 8)
+	deleted := make([dynamic]string, 0, 8)
 	for status in strings.split_iterator(cast (^string) &porcelain, "\n") {
 		id := status[len(status)-7:len(status)-3]
 		switch status[:2] {
@@ -218,30 +266,46 @@ commit :: proc() {
 			append(&edited, id)
 		case "??":
 			append(&created, id)
+		case " D":
+			append(&deleted, id)
 		case:
 			handle(true, status)
 		}
 	}
 
-	message := strings.builder_make()
-	if len(created) != 0 {
-		strings.write_string(&message, "created issue")
-		if len(created) > 1 do strings.write_string(&message, "s")
-		strings.write_string(&message, ": ")
-		strings.write_string(&message, strings.join(created[:], ", "))
-	}
-	if len(created) != 0 && len(edited) != 0 {
-		strings.write_string(&message, "; ")
-	}
-	if len(edited) != 0 {
-		strings.write_string(&message, "edited issue")
-		if len(edited) > 1 do strings.write_string(&message, "s")
-		strings.write_string(&message, ": ")
-		strings.write_string(&message, strings.join(edited[:], ", "))
+	create_str :: proc(ids: []string, verb: string, b: ^strings.Builder) -> string {
+		if len(ids) != 0 {
+			strings.write_string(b, strings.concatenate({ verb, " issue" }))
+			if len(ids) > 1 do strings.write_string(b, "s")
+			strings.write_string(b, ": ")
+			strings.write_string(b, strings.join(ids[:], ", "))
+		}
+		message := strings.to_string(b^)
+		strings.builder_reset(b)
+		return message
 	}
 
-	start_process({ "git", "add", "." })
-	start_process({ "git", "commit", "-m", strings.to_string(message) })
+	message_builder := strings.builder_make()
+
+	list : [3]string = {
+		create_str(created[:], "created", &message_builder),
+		create_str(deleted[:], "deleted", &message_builder),
+		create_str(edited[:],  "edited",  &message_builder),
+	}
+	#unroll for i in 0..<3 {
+		if len(list[i]) != 0 {
+			strings.write_string(&message_builder, list[i])
+			// TODO: figure out how to remove first comparison at compile time
+			if i < 2 && len(list[i + 1]) != 0 {
+				strings.write_string(&message_builder, "; ")
+			}
+		}
+	}
+
+	process_start({ "git", "add", "." })
+	process_start({ "git", "commit", "-m", strings.to_string(message_builder) })
+
+	strings.builder_destroy(&message_builder)
 
 	// reapply old index
 	apply_pr, apply_err := os2.process_start({

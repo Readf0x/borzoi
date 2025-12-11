@@ -5,21 +5,19 @@ import "core:os/os2"
 import "core:fmt"
 import "core:os"
 
+Command :: enum { init, list, edit, cat, new, gen, close, commit, delete, version, help }
+no_db_needed : bit_set[Command] : { .version, .init, .help }
+
 main :: proc() {
-	if len(os.args) < 2 {
-		help(1)
-	}
-	if os.args[1] == "--help" || os.args[1] == "-h" {
-		help(0)
-	}
-	command, exists := fmt.string_to_enum_value(Commands, os.args[1])
-	if !exists {
-		help(1)
-	}
+	if len(os.args) < 2 do help(1)
+	if os.args[1] == "--help" || os.args[1] == "-h" do help(0)
+
+	command, exists := fmt.string_to_enum_value(Command, os.args[1])
+	if !exists do help(1)
 
 	intty = cast (bool) posix.isatty(cast (posix.FD) os2.fd(os2.stdout))
 
-	if command != .version && command != .init && command != .help {
+	if command not_in no_db_needed {
 		for !os2.exists(".borzoi") {
 			dir, err := os2.get_working_directory(context.allocator)
 			handle(err != os2.ERROR_NONE, err)
@@ -33,28 +31,17 @@ main :: proc() {
 	}
 
 	switch command {
-	case .init:
-		init()
-	case .list:
-		list()
-	case .edit:
-		edit()
-	case .new:
-		new()
-	case .cat:
-		cat()
-	case .gen:
-		gen()
-	case .close:
-		close()
-	case .commit:
-		commit()
-	case .delete:
-		delete_issue()
-	case .version:
-		version()
-	case .help:
-		help(0)
+		case .init:    init()
+		case .list:    list()
+		case .edit:    edit()
+		case .new:     new()
+		case .cat:     cat()
+		case .gen:     gen()
+		case .close:   close()
+		case .commit:  commit()
+		case .delete:  delete_issue()
+		case .version: version()
+		case .help:    help(0)
 	}
 }
 
