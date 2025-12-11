@@ -22,9 +22,7 @@ dedicated frontend.
 Initialize a new borzoi repository by creating a .borzoi directory.
 .TP
 .B list
-List all open issues. Use
-.B -a
-to list all issues including closed ones.
+List issues with various filtering and sorting options.
 .TP
 .B new
 Create a new issue. Opens the issue in your default editor for editing.
@@ -57,5 +55,58 @@ Print version information.
 .TP
 .B help
 Show help message.
+.SH LIST OPTIONS
+The list command supports the following options for filtering and sorting issues:
+.TP
+.B --sort \fIpriority\fR|\fIdate\fR
+Sort issues by priority or creation date (default: priority).
+.TP
+.B --reverse
+Reverse the sort order.
+.TP
+.B --text \fISTRING\fR
+Search for issues containing STRING in title or body.
+.TP
+.B --title \fISTRING\fR
+Search for issues containing STRING in title.
+.TP
+.B --body \fISTRING\fR
+Search for issues containing STRING in body.
+.TP
+.B --status \fISTATUS\fR
+Filter by status (Open, Closed, Wontfix, Ongoing). Can be specified multiple times.
+.TP
+.B --closed
+Show only closed issues (Closed and Wontfix).
+.TP
+.B --all
+Show all issues regardless of status.
+.TP
+.B --priority \fINUM\fR
+Show issues with exact priority NUM.
+.TP
+.B --min-priority \fINUM\fR
+Show issues with priority at least NUM.
+.TP
+.B --max-priority \fINUM\fR
+Show issues with priority at most NUM.
+.TP
+.B --created-on \fIDATE\fR
+Show issues created on DATE (YYYY-MM-DD format).
+.TP
+.B --created-before \fIDATE\fR
+Show issues created before DATE.
+.TP
+.B --created-after \fIDATE\fR
+Show issues created after DATE.
+.TP
+.B --author \fINAME\fR
+Filter by author NAME. Can be specified multiple times.
+.TP
+.B --assignee \fINAME\fR
+Filter by assignee NAME. Can be specified multiple times.
+.TP
+.B --label \fILABEL\fR
+Filter by label LABEL. Can be specified multiple times.
 .SH SEE ALSO
 The borzoi repository: https://github.com/readf0x/borzoi
