@@ -237,3 +237,12 @@ delete_issue :: proc() {
 	}
 }
 
+git_hooks :: proc() {
+	stdout, err := process_out({ "git", "rev-parse", "--show-toplevel" })
+	handle(err != os2.ERROR_NONE, err)
+	os2.change_directory(strings.concatenate({ cast (string) stdout[:len(stdout) - 1], "/.git" }))
+	// LSP complains about error here, ignore it it will compile.
+	err = os2.write_entire_file("hooks/post-commit", #load("../static/post-commit.bash", []byte), os2.Permissions_Read_All + os2.Permissions_Execute_All + { .Write_User })
+	handle(err != os2.ERROR_NONE, err)
+}
+

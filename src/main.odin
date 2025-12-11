@@ -11,6 +11,11 @@ no_db_needed : bit_set[Command] : { .version, .init, .help }
 main :: proc() {
 	if len(os.args) < 2 do help(1)
 	if os.args[1] == "--help" || os.args[1] == "-h" do help(0)
+	// I wanted this to be in the command enum but names can't contain dashes
+	if os.args[1] == "git-hook" {
+		git_hooks()
+		os.exit(0)
+	}
 
 	command, exists := fmt.string_to_enum_value(Command, os.args[1])
 	if !exists do help(1)
@@ -55,17 +60,18 @@ help :: proc(code: int) {
 
 		"Positional arguments:\n" +
 		"  {init,list,new,edit,cat,gen,close,commit,delete,version,help}\n" +
-		"    init     initialize repository\n" +
-		"    list     list issues\n" +
-		"    new      new issue\n" +
-		"    edit     open issue in editor\n" +
-		"    cat      print issue\n" +
-		"    gen      generate issue from todo\n" +
-		"    close    close issue\n" +
-		"    commit   commit changes\n" +
-		"    delete   delete issue\n" +
-		"    version  print version\n" +
-		"    help     show this menu"
+		"    init      initialize repository\n" +
+		"    list      list issues\n" +
+		"    new       new issue\n" +
+		"    edit      open issue in editor\n" +
+		"    cat       print issue\n" +
+		"    gen       generate issue from todo\n" +
+		"    close     close issue\n" +
+		"    commit    commit changes\n" +
+		"    delete    delete issue\n" +
+		"    version   print version\n" +
+		"    help      show this menu\n" +
+		"    git-hook  deploy post commit hook"
 	)
 	os.exit(code)
 }
