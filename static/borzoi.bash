@@ -19,7 +19,7 @@ _borzoi_completions() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
     # Main commands
-    opts="init list new edit cat gen close commit delete version help"
+    opts="init list new edit cat gen close commit delete version help git-hook"
 
     # Commands that take issue IDs
     issue_cmds="edit cat close delete"
