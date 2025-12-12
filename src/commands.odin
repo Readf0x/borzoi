@@ -72,7 +72,7 @@ cat :: proc() {
 				both ? "\n" : "  ",
 				RESET, issue.author, BRIGHT_BLACK,
 				single ? "\n" : "  ",
-				RESET, format_timestamp(issue.time.time),
+				RESET, format_timestamp(issue.time),
 
 				body,
 			)
@@ -82,7 +82,6 @@ cat :: proc() {
 	}
 }
 
-// Issue(4BF8): Implement close command
 close :: proc() {
 	handle(len(os.args) < 3, "Missing id")
 	buf := make([]byte, 7)
@@ -118,10 +117,11 @@ new :: proc() {
 	username, u_err := get_username()
 	handle(u_err != os2.ERROR_NONE, u_err)
 
+	utc_offset := get_utc_offset()
 	issuestr := issue_to_string(Issue{
 		author = cast (string) username,
 		// Issue(BE38): Local time formatting
-		time = { time.now(), 0 },
+		time = { time.now(), utc_offset },
 		priority = 1,
 	})
 

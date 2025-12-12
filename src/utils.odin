@@ -1,5 +1,6 @@
 package main
 
+import "core:time/timezone"
 import "base:runtime"
 import "core:os/os2"
 import "core:strings"
@@ -8,12 +9,13 @@ import "core:os"
 import "core:time"
 
 @(require_results)
-format_timestamp :: proc(t: time.Time) -> string {
+format_timestamp :: proc(t: Time) -> string {
 	b: strings.Builder = strings.builder_make()
 
 	// Issue(BE38): Local time formatting
-	year, month, day := time.date(t)
-	hour, minute, sec := time.clock_from_time(t)
+	post_offset: time.Time = { t.time._nsec + ( i64(t.utc_offset) * i64(time.Minute) ) }
+	year, month, day := time.date(post_offset)
+	hour, minute, sec := time.clock_from_time(post_offset)
 
 	fmt.sbprintf(&b, "%4d-%2d-%2d %2d:%2d:%2d", year, month, day, hour, minute, sec)
 
@@ -114,6 +116,19 @@ get_username :: proc() -> (string, os2.Error) {
 	}
 	username = username[:len(username) - 1]
 	return cast (string) username, err
+}
+
+get_utc_offset :: proc() -> int {
+	region, ok := timezone.region_load("local")
+	utc_offset: i64
+	if ok && len(region.records) > 0 do utc_offset = region.records[0].utc_offset
+	else {
+		stdout, err := process_out({ "date", "--rfc-3339=seconds" })
+		handle(err != os2.ERROR_NONE, err)
+		_, offset, con := time.rfc3339_to_time_and_offset(cast (string) stdout[:len(stdout) - 1])
+		if con > 0 do return offset
+	}
+	return cast (int) utc_offset
 }
 
 handle_any :: #force_inline proc(when_this: bool, err: any, loc := #caller_location) {

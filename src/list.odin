@@ -8,6 +8,41 @@ import "core:fmt"
 import "core:os"
 import "core:time"
 
+List_Sort :: enum { priority, date }
+List_Filter :: struct {
+	sort: List_Sort,
+	reverse: bool,
+	statuses: bit_set[Status],
+	title, body: string,
+	priority_range: [2]uint,
+	date_range: [2]time.Time,
+	authors, assignees, labels: []string,
+}
+List_Args :: struct {
+	sort: List_Sort,
+	reverse: bool,
+
+	text,
+	title,
+	body: string,
+
+	status: bit_set[Status],
+	closed,
+	all: bool,
+
+	priority,
+	min_priority,
+	max_priority: uint,
+
+	created_on,
+	created_before,
+	created_after: time.Time,
+
+	author: [dynamic]string,
+	assignee: [dynamic]string,
+	label: [dynamic]string,
+}
+
 list_filter: List_Filter
 list :: proc() {
 	args: List_Args = {
@@ -104,6 +139,7 @@ list :: proc() {
 		sep = "\t"
 	}
 	buf := make([]byte, 4)
+	utc_offset := get_utc_offset()
 	for issue in issues {
 		id := fmt.bprintf(buf, "%4X", issue.id)
 		status_string     : string = ---
@@ -120,7 +156,7 @@ list :: proc() {
 				id, sep,
 				issue.title, strings.repeat(" ", max_title - len(issue.title)), sep,
 				status_string, strings.repeat(" ", 3 - (status_string_len - 4)), sep,
-				format_timestamp(issue.time.time),
+				format_timestamp({ issue.time.time, utc_offset }),
 			}),
 		)
 		buf = { 0, 0, 0, 0 }
