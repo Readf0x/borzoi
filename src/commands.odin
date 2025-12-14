@@ -28,7 +28,7 @@ init :: proc() {
 
 cat :: proc() {
 	handle(len(os.args) < 3, "Missing id")
-	for path in os.args[2:] {
+	for path, i in os.args[2:] {
 		issue := issue_from_idstr(strings.to_upper(path))
 		status, _ := color_status(issue.status)
 
@@ -57,8 +57,9 @@ cat :: proc() {
 		single := len(assign_str) + len(label_str) != 0 && !both
 
 		if (intty) {
+			if i > 0 do fmt.print("\n")
 			fmt.printf(
-				"\n%s%s%s %4X %s%s%s%s\n" +
+				"%s%s%s %4X %s%s%s%s\n" +
 				"%sStatus: %s%s%s  Priority: %s%d%s%s%s%sAuthor: %s%s%s%sCreated: %s%s\n\n%s",
 
 				BG_BLUE, BRIGHT_BLACK, BOLD, issue.id, BLACK, issue.title,
@@ -78,6 +79,7 @@ cat :: proc() {
 				body,
 			)
 		} else {
+			if i > 0 do fmt.print("\n")
 			fmt.printf("# %s\n\n", issue.title)
 			fmt.print(issue.body)
 		}
