@@ -24,27 +24,29 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 }
 
 issue_from_idstr :: proc(idstr: string) -> Issue {
-	data, _ := os2.read_entire_file_from_path(issue_exists(idstr), context.allocator)
-	metadata := strings.split_lines_n(cast (string) data, 8)
+	filename := idstr_to_path(idstr)
+	data, _ := os2.read_entire_file_from_path(filename, context.allocator)
+	metadata := strings.split_lines_n(cast (string) data, 10)
 
-	id, ok := strconv.parse_uint(idstr[:4], 16)
+	id, ok := strconv.parse_uint(idstr, 16)
 	fullpath, _ := os2.get_working_directory(context.allocator)
+	fullpath = strings.concatenate({ fullpath, "/", filename })
 
-	status, enum_ok := fmt.string_to_enum_value(Status, metadata[1][10:])
-	handle(!enum_ok, "%s:2:11: Invalid status '%s'", fullpath, metadata[1][10:])
+	status, enum_ok := fmt.string_to_enum_value(Status, metadata[1][8:])
+	handle(!enum_ok, "%s:2:11: Invalid status '%s'", fullpath, metadata[1][8:])
 
-	priority, atoi_ok := strconv.parse_uint(metadata[2][10:], 10)
-	handle(!atoi_ok, "%s:4:11: Invalid priority '%s'", fullpath, metadata[2][10:])
+	priority, atoi_ok := strconv.parse_uint(metadata[2][8:], 10)
+	handle(!atoi_ok, "%s:4:11: Invalid priority '%s'", fullpath, metadata[2][8:])
 
-	assignees := strings.split(metadata[3][10:], ", ")
-	labels := strings.split(metadata[4][10:], ", ")
+	assignees := strings.split(metadata[3][8:], ", ")
+	labels := strings.split(metadata[4][8:], ", ")
 
-	time, offset, consumed := time.rfc3339_to_time_and_offset(metadata[6][10:])
-	handle(consumed == 0, "%s:4:11: Invalid creation date '%s'", fullpath, metadata[6][10:])
+	time, offset, consumed := time.rfc3339_to_time_and_offset(metadata[6][8:])
+	handle(consumed == 0, "%s:4:11: Invalid creation date '%s'", fullpath, metadata[6][8:])
 
 	return {
 		id,
-		metadata[0][2:], metadata[5][10:], metadata[7],
+		metadata[8][2:], metadata[5][8:], metadata[9],
 		assignees, labels,
 		{ time, offset },
 		priority,
@@ -58,20 +60,22 @@ issue_to_string :: proc(issue: Issue, allocator := context.allocator) -> string 
 	assignees := strings.join(issue.assignees, ", ")
 	labels := strings.join(issue.labels, ", ")
 	fmt.sbprintf(&b,
-		"# %s\n" +          // metadata[0]
-		"- STATUS: %v\n" +  // metadata[1]
-		"- PRIORI: %d\n" +  // metadata[2]
-		"- ASSIGN: %s\n" +  // metadata[3]
-		"- LABELS: %s\n" +  // metadata[4]
-		"- AUTHOR: %s\n" +  // metadata[5]
-		"- CRDATE: %s\n%s", // metadata[6], [7]
-		issue.title,
+		"---\n" +         // metadata[0]
+		"status: %v\n" +  // metadata[1]
+		"priori: %d\n" +  // metadata[2]
+		"assign: %s\n" +  // metadata[3]
+		"labels: %s\n" +  // metadata[4]
+		"author: %s\n" +  // metadata[5]
+		"crdate: %s\n" +  // metadata[6]
+		"---\n" +         // metadata[7]
+		"# %s\n%s",       // metadata[8], [9]
 		issue.status,
 		issue.priority,
 		assignees,
 		labels,
 		issue.author,
 		timestr,
+		issue.title,
 		issue.body
 	)
 	return strings.to_string(b)

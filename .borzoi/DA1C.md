@@ -1,10 +1,12 @@
+---
+status: Open
+priori: 1
+assign: 
+labels: templates
+author: readf0x
+crdate: 2025-12-09T21:33:21Z
+---
 # Issue templates
-- STATUS: Open
-- PRIORI: 1
-- ASSIGN: 
-- LABELS: templates
-- AUTHOR: readf0x
-- CRDATE: 2025-12-09T21:33:21Z
 A good plan for this would be having `name.template.md` inside the DB which
 just gets injected at the end of the file, pretty simple. The interface for
 choosing the template is slightly more complex however. Do we enforce picking a
