@@ -1,6 +1,6 @@
 ---
 status: Open
-priori: 1
+priori: 2
 assign: 
 labels: templates
 author: readf0x
