@@ -62,7 +62,7 @@ cat :: proc() {
 
 				BG_BLUE, BRIGHT_BLACK, BOLD, issue.id, BLACK, issue.title,
 				strings.repeat(" ",
-					math.max(80-len(issue.title), 0)+1
+					math.max(73-len(issue.title), 0)+1
 				),
 				RESET,
 
