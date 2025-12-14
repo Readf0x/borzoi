@@ -2,7 +2,6 @@ package main
 
 import "core:math/rand"
 import "core:os/os2"
-import "core:math"
 import "core:strings"
 import "core:fmt"
 import "core:os"
@@ -24,66 +23,6 @@ gen :: proc() {
 init :: proc() {
 	err := os2.mkdir(".borzoi")
 	handle(err != os2.ERROR_NONE, err)
-}
-
-cat :: proc() {
-	handle(len(os.args) < 3, "Missing id")
-	for path, i in os.args[2:] {
-		issue := issue_from_idstr(strings.to_upper(path))
-		status, _ := color_status(issue.status)
-
-		body := issue.body
-		if body == "" {
-			body = BRIGHT_BLACK + "<Empty body>" + RESET + "\n"
-		}
-
-		assign_str: string
-		if len(issue.assignees[0]) != 0 {
-			assign_str = fmt.bprintf(make([]byte, 512),
-				"  Assigned to: %s%s%s",
-				RESET, strings.join(issue.assignees, BRIGHT_BLACK + ", " + RESET), BRIGHT_BLACK
-			)
-		}
-		label_str: string
-		if len(issue.labels[0]) != 0 {
-			label_str = fmt.bprintf(make([]byte, 512),
-				"  Labels: %s%s%s",
-				YELLOW, strings.join(issue.labels, BRIGHT_BLACK + ", " + YELLOW), BRIGHT_BLACK
-			)
-		}
-
-		// Naive implementation, works for now but we need do actual wrapping eventually.
-		both := len(assign_str) != 0 && len(label_str) != 0
-		single := len(assign_str) + len(label_str) != 0 && !both
-
-		if (intty) {
-			if i > 0 do fmt.print("\n")
-			fmt.printf(
-				"%s%s%s %4X %s%s%s%s\n" +
-				"%sStatus: %s%s%s  Priority: %s%d%s%s%s%sAuthor: %s%s%s%sCreated: %s%s\n\n%s",
-
-				BG_BLUE, BRIGHT_BLACK, BOLD, issue.id, BLACK, issue.title,
-				strings.repeat(" ",
-					math.max(73-len(issue.title), 0)+1
-				),
-				RESET,
-
-				BRIGHT_BLACK, RESET, status, BRIGHT_BLACK,
-				RESET, issue.priority, BRIGHT_BLACK,
-				assign_str, label_str,
-				both ? "\n" : "  ",
-				RESET, issue.author, BRIGHT_BLACK,
-				single ? "\n" : "  ",
-				RESET, format_timestamp(issue.time),
-
-				body,
-			)
-		} else {
-			if i > 0 do fmt.print("\n")
-			fmt.printf("# %s\n\n", issue.title)
-			fmt.print(issue.body)
-		}
-	}
 }
 
 close :: proc() {
