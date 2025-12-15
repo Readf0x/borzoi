@@ -11,6 +11,9 @@ borzoi \- flat file issue tracker
 .br
 .B borzoi gen
 .RI [FILES...]
+.br
+.B borzoi template
+.RI { new | list | cat }
 .SH DESCRIPTION
 .B borzoi
 is a CLI issue tracker that stores issues in human readable plaintext files
@@ -49,6 +52,10 @@ based on created and edited issues.
 .B delete
 .IR ISSUES...
 Delete the specified issues.
+.TP
+.B template
+.IR new | list | cat
+Manage templates.
 .TP
 .B version
 Print version information.

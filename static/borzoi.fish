@@ -1,7 +1,7 @@
 # Borzoi fish completion
 
 # Main commands
-complete -c borzoi -n "__fish_use_subcommand" -f -a "init list new edit cat gen close commit delete version help git-hook"
+complete -c borzoi -n 'test (count (commandline -poc)) -eq 1' -f -a "init list new edit cat gen close commit delete version template help git-hook"
 
 # list command options
 complete -c borzoi -f -n "__fish_seen_subcommand_from list" -l sort -r -a "priority date" -d "Sort by priority or date"
@@ -22,10 +22,19 @@ complete -c borzoi -f -n "__fish_seen_subcommand_from list" -l author -r -d "Fil
 complete -c borzoi -f -n "__fish_seen_subcommand_from list" -l assignee -r -d "Filter by assignee"
 complete -c borzoi -f -n "__fish_seen_subcommand_from list" -l label -r -d "Filter by label"
 
-# Commands that take issue IDs
-for cmd in edit cat close delete
+# template options
+complete -c borzoi -n '__fish_seen_subcommand_from template; and test (count (commandline -poc)) -eq 2' -f -a "new cat list"
+
+# Commands that take issue IDs (but not when used as template subcommands)
+for cmd in edit close delete
     complete -c borzoi -n "__fish_seen_subcommand_from $cmd" -f -a "(__borzoi_issues)"
 end
+
+# cat command takes issue IDs (only when cat is a top-level command)
+complete -c borzoi -n '__fish_seen_subcommand_from cat; and not __fish_seen_subcommand_from template' -a "(__borzoi_issues)"
+
+# template cat takes template names
+complete -c borzoi -n "__fish_seen_subcommand_from template; and __fish_seen_subcommand_from cat" -a "(__borzoi_templates)"
 
 # gen command takes files
 complete -c borzoi -n "__fish_seen_subcommand_from gen" -F -d "source file"
@@ -34,7 +43,30 @@ function __borzoi_issues
     set -l dir $PWD
     while test $dir != /
         if test -d $dir/.borzoi
-            ls $dir/.borzoi/*.md 2>/dev/null | sed 's|.*/\([0-9A-F]*\)\.md|\1|'
+            ls $dir/.borzoi/*.md 2>/dev/null | grep -E '/[0-9A-F]{4}\.md$' | sed 's|.*/\([0-9A-F]\{4\}\)\.md|\1|'
+            return
+        end
+        set dir (dirname $dir)
+    end
+end
+
+function __borzoi_template_no_subcommand
+    __fish_seen_subcommand_from template
+    and not __fish_seen_subcommand_from new
+    and not __fish_seen_subcommand_from cat
+    and not __fish_seen_subcommand_from list
+end
+
+function __borzoi_cat_top_level
+    __fish_seen_subcommand_from cat
+    and not __fish_seen_subcommand_from template
+end
+
+function __borzoi_templates
+    set -l dir $PWD
+    while test $dir != /
+        if test -d $dir/.borzoi
+            ls $dir/.borzoi/template.*.md 2>/dev/null | sed 's|.*/template\.\(.*\)\.md|\1|'
             return
         end
         set dir (dirname $dir)

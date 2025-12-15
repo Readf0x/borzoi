@@ -71,6 +71,7 @@ help :: proc(code: int) {
 		"    commit    commit changes\n" +
 		"    delete    delete issue\n" +
 		"    version   print version\n" +
+		"    template  template management\n" +
 		"    help      show this menu\n" +
 		"    git-hook  deploy post commit hook"
 	)
