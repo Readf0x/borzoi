@@ -36,6 +36,14 @@ _borzoi_completions() {
             COMPREPLY=( $(compgen -W "--sort --reverse --text --title --body --status --closed --all --priority --min-priority --max-priority --created-on --created-before --created-after --author --assignee --label" -- ${cur}) )
             return 0
             ;;
+        --sort)
+            COMPREPLY=( $(compgen -W "priority date" -- ${cur}) )
+            return 0
+            ;;
+        --status)
+            COMPREPLY=( $(compgen -W "Open Closed Wontfix Ongoing" -- ${cur}) )
+            return 0
+            ;;
         edit|cat|close|delete)
             # Complete with issue IDs from .borzoi directory (search upward)
             local borzoi_dir
