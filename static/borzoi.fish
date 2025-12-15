@@ -27,14 +27,17 @@ complete -c borzoi -n '__fish_seen_subcommand_from template; and test (count (co
 
 # Commands that take issue IDs (but not when used as template subcommands)
 for cmd in edit close delete
-    complete -c borzoi -n "__fish_seen_subcommand_from $cmd" -f -a "(__borzoi_issues)"
+    complete -c borzoi -f -n "__fish_seen_subcommand_from $cmd" -f -a "(__borzoi_issues)"
 end
 
 # cat command takes issue IDs (only when cat is a top-level command)
-complete -c borzoi -n '__fish_seen_subcommand_from cat; and not __fish_seen_subcommand_from template' -a "(__borzoi_issues)"
+complete -c borzoi -f -n '__fish_seen_subcommand_from cat; and not __fish_seen_subcommand_from template' -a "(__borzoi_issues)"
+
+# new template flag
+complete -c borzoi -f -n '__fish_seen_subcommand_from new; and not __fish_seen_subcommand_from template' -l template -r -a "(__borzoi_templates)" -d "Template for body"
 
 # template cat takes template names
-complete -c borzoi -n "__fish_seen_subcommand_from template; and __fish_seen_subcommand_from cat" -a "(__borzoi_templates)"
+complete -c borzoi -f -n "__fish_seen_subcommand_from template; and __fish_seen_subcommand_from cat" -a "(__borzoi_templates)"
 
 # gen command takes files
 complete -c borzoi -n "__fish_seen_subcommand_from gen" -F -d "source file"
@@ -66,7 +69,7 @@ function __borzoi_templates
     set -l dir $PWD
     while test $dir != /
         if test -d $dir/.borzoi
-            ls $dir/.borzoi/template.*.md 2>/dev/null | sed 's|.*/template\.\(.*\)\.md|\1|'
+            ls $dir/.borzoi/*.md 2>/dev/null | grep -E '/template\..*\.md$' | sed 's|.*/template\.\(.*\)\.md|\1|'
             return
         end
         set dir (dirname $dir)
