@@ -17,7 +17,7 @@ issues_closed=false
 
 # Find all matches in the commit message
 while [[ $commit_msg =~ $pattern ]]; do
-    issue_id="${BASH_REMATCH[2]}"
+    issue_id="${BASH_REMATCH[2]^^}"
     
     echo "Found issue reference: $issue_id"
     echo "Closing issue $issue_id..."
@@ -28,8 +28,7 @@ while [[ $commit_msg =~ $pattern ]]; do
         issues_closed=true
         
         # Stage the changed issue file
-        # Adjust this path if borzoi stores issues elsewhere
-        git add .borzoi/ 2>/dev/null || git add issues/ 2>/dev/null
+        git add ".borzoi/$issue_id.md" 2>/dev/null || git add issues/ 2>/dev/null
     else
         echo "Warning: Failed to close issue $issue_id"
     fi
