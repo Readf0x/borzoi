@@ -26,32 +26,97 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 issue_from_idstr :: proc(idstr: string) -> Issue {
 	filename := idstr_to_path(idstr)
 	data, _ := os2.read_entire_file_from_path(filename, context.allocator)
-	metadata := strings.split_lines_n(cast (string) data, 10)
-
-	id, ok := strconv.parse_uint(idstr, 16)
+	id, _ := strconv.parse_uint(idstr, 16)
 	fullpath, _ := os2.get_working_directory(context.allocator)
 	fullpath = strings.concatenate({ fullpath, "/", filename })
 
-	status, enum_ok := fmt.string_to_enum_value(Status, metadata[1][8:])
-	handle(!enum_ok, "%s:2:11: Invalid status '%s'", fullpath, metadata[1][8:])
+	issue: Issue
 
-	priority, atoi_ok := strconv.parse_uint(metadata[2][8:], 10)
-	handle(!atoi_ok, "%s:4:11: Invalid priority '%s'", fullpath, metadata[2][8:])
-
-	assignees := strings.split(metadata[3][8:], ", ")
-	labels := strings.split(metadata[4][8:], ", ")
-
-	time, offset, consumed := time.rfc3339_to_time_and_offset(metadata[6][8:])
-	handle(consumed == 0, "%s:4:11: Invalid creation date '%s'", fullpath, metadata[6][8:])
-
-	return {
-		id,
-		metadata[8][2:], metadata[5][8:], metadata[9],
-		assignees, labels,
-		{ time, offset },
-		priority,
-		status,
+	offset := 0
+	current_action : enum {
+		looking_for_yaml,
+		looking_for_key,
+		checking_key,
+		checking_value,
+		looking_for_title,
 	}
+	current: enum {
+		none,
+		status,
+		priori,
+		assign,
+		labels,
+		author,
+		crdate,
+	} = .none
+	values_filled := 0
+	yaml_lines := 0
+	current_line := 1
+	colon_pos: int = ---
+
+	char: byte = ---
+	for pos := 0; pos < len(data); pos += 1 {
+		char = data[pos]
+		if char == '\n' {
+			offset = pos
+			current_line += 1
+			continue
+		}
+		switch current_action {
+		case .looking_for_yaml:
+			if char == '-' {
+				if yaml_lines == 3 do current_action = .looking_for_key
+				else do yaml_lines += 1
+			}
+			else do handle(true, "%s:%d:%d: Invalid character: '%c'", fullpath, current_line, pos - offset, char)
+		case .looking_for_key:
+		case .checking_key:
+			key := string(data[pos:pos + 7 - offset])
+			switch key {
+			case "status":
+				current = .status
+			case "priori":
+				current = .priori
+			case "assign":
+				current = .assign
+			case "labels":
+				current = .labels
+			case "author":
+				current = .author
+			case "crdate":
+				current = .crdate
+			case:
+				handle(true, "%s:%d:%d: Unknown key: '%s'", fullpath, current_line, pos - offset, key)
+			}
+			pos += 7
+		case .checking_value:
+			if current != .none {
+				prefix := 0
+				for char, i in data[colon_pos:] {
+					if char == ' ' do prefix += 1
+					else do break
+				}
+				str := cast (string) buf[prefix:pos-offset-1]
+
+				#partial switch current {
+				case .status:
+					status, ok := fmt.string_to_enum_value(Status, str)
+					handle(!ok, "%s:%d:%d: Invalid status '%s'", fullpath, current_line, pos - offset, str)
+				case .priori:
+				case .assign:
+				case .labels:
+				case .author:
+				case .crdate:
+				}
+				values_filled += 1
+			}
+			offset = pos
+			current_line += 1
+		case .looking_for_title:
+		}
+	}
+
+	return issue
 }
 
 issue_to_string :: proc(issue: Issue, allocator := context.allocator) -> string {
@@ -68,7 +133,7 @@ issue_to_string :: proc(issue: Issue, allocator := context.allocator) -> string 
 		"author: %s\n" +  // metadata[5]
 		"crdate: %s\n" +  // metadata[6]
 		"---\n" +         // metadata[7]
-		"# %s\n%s",       // metadata[8], [9]
+		"# %s\n%s",       // metadata[8], [9]+[10] or [9], [10]
 		issue.status,
 		issue.priority,
 		assignees,
