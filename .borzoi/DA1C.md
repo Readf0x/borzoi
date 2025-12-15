@@ -1,5 +1,5 @@
 ---
-status: Open
+status: Closed
 priori: 2
 assign: 
 labels: templates

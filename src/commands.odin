@@ -1,5 +1,8 @@
 package main
 
+import "core:flags"
+import "core:math"
+import "core:slice"
 import "core:math/rand"
 import "core:os/os2"
 import "core:strings"
@@ -39,6 +42,18 @@ close :: proc() {
 }
 
 new :: proc() {
+	args : struct { template: string } = {}
+	flags.parse(&args, os.args[2:])
+
+	template: string = ""
+	check_template :: proc(t: ^string, name: string) {
+		data, err := os2.read_entire_file_from_path(strings.concatenate({ "template.", name, ".md" }), context.allocator)
+		handle(err != os2.ERROR_NONE, err)
+		t^ = cast (string) data
+	}
+	if len(args.template) != 0 do check_template(&template, args.template)
+	else if os2.exists("template.default.md") do check_template(&template, "default")
+
 	files, err := os2.read_directory_by_path(".", 0, context.temp_allocator)
 	handle(err != os2.ERROR_NONE, err)
 
@@ -65,6 +80,7 @@ new :: proc() {
 		author = cast (string) username,
 		time = { time.now(), utc_offset },
 		priority = 1,
+		body = template,
 	})
 
 	file_err := os2.write_entire_file(path, transmute ([]byte) issuestr)
@@ -184,8 +200,35 @@ git_hooks :: proc() {
 	stdout, err := process_out({ "git", "rev-parse", "--show-toplevel" })
 	handle(err != os2.ERROR_NONE, err)
 	os2.change_directory(strings.concatenate({ cast (string) stdout[:len(stdout) - 1], "/.git" }))
-	// LSP complains about error here, ignore it it will compile.
 	err = os2.write_entire_file("hooks/post-commit", #load("../static/post-commit.bash", []byte), os2.Permissions_Read_All + os2.Permissions_Execute_All + { .Write_User })
 	handle(err != os2.ERROR_NONE, err)
+}
+
+template :: proc() {
+	handle(len(os.args) < 3, "Not enough arguments!")
+	switch os.args[2] {
+	case "new":
+		handle(len(os.args) < 4, "Not enough arguments!")
+		err := editor(strings.concatenate({ "template.", os.args[3], ".md" }))
+		handle(err != os2.ERROR_NONE, err)
+	case "list":
+		files, err := os2.read_all_directory_by_path(".", context.allocator)
+		handle(err != os2.ERROR_NONE, err)
+		files = slice.filter(files, proc(file: os2.File_Info) -> bool {
+			return strings.has_prefix(file.name, "template.") && strings.has_suffix(file.name, ".md")
+		})
+		longest_name_length: int
+		handle(len(files) == 0, "No templates.")
+		for file in files do longest_name_length = math.max(longest_name_length, len(file.name)) - 12
+		fmt.printfln(UNDERLINE + BRIGHT_BLACK + "templates%s" + RESET,
+			strings.repeat(" ", math.max(0, longest_name_length - 9))
+		)
+		for file in files do fmt.printfln(file.name[9:len(file.name)-3])
+	case "cat":
+		data, err := os2.read_entire_file_from_path(strings.concatenate({ "template.", os.args[3], ".md" }), context.allocator)
+		handle(err != os2.ERROR_NONE, err)
+		fmt.print(string(data))
+	case: fmt.printfln("Unknown commmand: %s", os.args[2])
+	}
 }
 
