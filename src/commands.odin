@@ -2,12 +2,9 @@ package main
 
 import "core:math/rand"
 import "core:os/os2"
-import "core:sys/posix"
 import "core:slice"
-import "core:strconv"
 import "core:math"
 import "core:strings"
-import "core:text/regex"
 import "core:fmt"
 import "core:os"
 import "core:time"
@@ -40,8 +37,9 @@ cat :: proc() {
 		os.exit(1)
 	}
 	for path in os.args[2:] {
-		issue := issue_from_path(issue_exists(path))
+		issue := issue_from_idstr(strings.to_upper(path))
 		status, _ := color_status(issue.status)
+
 		if (intty) {
 			fmt.printf(
 				"\n%s%s%s %4X %s%s%s%s\n" +
@@ -146,24 +144,15 @@ new :: proc() {
 	rand.reset(now)
 	rand_id := rand.uint32()
 
-	buf := make([]byte, 4, context.temp_allocator)
-	idstr := strconv.write_uint(buf, u64(rand_id & 0x0000FFFF), 16)
+	buf := make([]byte, 7, context.temp_allocator)
+	path := fmt.bprintf(buf, "%4X.md", rand_id & 0x0000FFFF)
 
-	for os2.exists(idstr) {
+	for os2.exists(path) {
 		now += 1
+		buf = { 0, 0, 0, 0, 0, 0, 0 }
 		rand.reset(cast (u64) now)
 		rand_id = rand.uint32()
-		idstr = strconv.write_uint(buf, u64(rand_id & 0x0000FFFF), 16)
-	}
-
-	path := strings.concatenate({
-		strings.repeat("0", 4 - len(idstr)), idstr
-	})
-
-	file, errr := os2.create(path)
-	if errr != os2.ERROR_NONE {
-		fmt.println(errr)
-		os.exit(1)
+		path = fmt.bprintf(buf, "%4X.md", rand_id & 0x0000FFFF)
 	}
 
 	stdout, proc_err := process_out({ "git", "config", "user.name" })
