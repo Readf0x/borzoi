@@ -11,7 +11,8 @@ import "core:time"
 edit :: proc() {
 	handle(len(os.args) < 3, "Missing id")
 	for issue in os.args[2:] {
-		editor(issue_exists(strings.to_upper(issue)))
+		err := editor(idstr_to_path(strings.to_upper(issue)))
+		handle(err != os2.ERROR_NONE, "Failed to open editor: %v", err)
 	}
 }
 
@@ -33,7 +34,7 @@ cat :: proc() {
 
 		body := issue.body
 		if body == "" {
-			body = BRIGHT_BLACK + "<Empty body>" + RESET
+			body = BRIGHT_BLACK + "<Empty body>" + RESET + "\n"
 		}
 
 		assign_str: string
@@ -77,6 +78,7 @@ cat :: proc() {
 				body,
 			)
 		} else {
+			fmt.printf("# %s\n\n", issue.title)
 			fmt.print(issue.body)
 		}
 	}
@@ -127,7 +129,8 @@ new :: proc() {
 
 	file_err := os2.write_entire_file(path, transmute ([]byte) issuestr)
 
-	editor(path)
+	err = editor(path)
+	handle(err != os2.ERROR_NONE, "Failed to open editor: %v", err)
 }
 
 commit :: proc() {
@@ -231,7 +234,7 @@ commit :: proc() {
 delete_issue :: proc() {
 	handle(len(os.args) < 3, "Missing id")
 	for id in os.args[2:] {
-		path := issue_exists(strings.to_upper(id))
+		path := idstr_to_path(strings.to_upper(id))
 		err := os2.remove(path)
 		handle(err != os2.ERROR_NONE, err)
 	}

@@ -1,8 +1,10 @@
+---
+status: Open
+priori: 1
+assign: 
+labels: 
+author: readf0x
+crdate: 2025-12-10T21:42:10Z
+---
 # Basic issue
-- STATUS: Open
-- PRIORI: 1
-- ASSIGN: 
-- LABELS: 
-- AUTHOR: readf0x
-- CRDATE: 2025-12-10T21:42:10Z
 Example body

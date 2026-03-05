@@ -79,7 +79,8 @@ process_custom :: proc(desc: os2.Process_Desc) -> os2.Error {
 	return os2.ERROR_NONE
 }
 
-editor :: proc(path: string) {
+@(require_results)
+editor :: proc(path: string) -> os2.Error {
 	editor := os.get_env("VISUAL")
 	if editor == "" {
 		editor = os.get_env("EDITOR")
@@ -87,11 +88,23 @@ editor :: proc(path: string) {
 			editor = "vim"
 		}
 	}
-	err := process_start({ editor, path })
+	err: os2.Error
+	switch editor {
+	case "vi":  fallthrough
+	case "vim": fallthrough
+	case "nvim":
+		err = process_start({ editor, "+normal9G2l", path })
+	case "emacs": fallthrough
+	case "emacsclient":
+		err = process_start({ editor, "+9", path })
+	case:
+		err = process_start({ editor, path })
+	}
+	return err
 }
 
 @(require_results)
-issue_exists :: proc(issue: string) -> string {
+idstr_to_path :: proc(issue: string) -> string {
 	path := strings.concatenate({ issue, ".md" })
 	_, err := os2.stat(path, context.allocator)
 	handle(err != os2.ERROR_NONE, proc(err: rawptr) {
