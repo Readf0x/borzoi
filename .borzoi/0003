@@ -1,7 +1,7 @@
 # Implement commit command
 - STATUS: Open
 - AUTHOR: readf0x
-- PRIORI: 2
+- PRIORI: 1
 - CRDATE: 2025-12-06T19:03:23.6303873Z
 The commit command needs to cache the current staging area to `/tmp/`,
 stage the db, and commit with a generated commit message based on db changes.
