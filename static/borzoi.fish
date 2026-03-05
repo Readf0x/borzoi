@@ -1,7 +1,7 @@
 # Borzoi fish completion
 
 # Main commands
-complete -c borzoi -n "__fish_use_subcommand" -f -a "init list new edit cat gen close commit delete version help"
+complete -c borzoi -n "__fish_use_subcommand" -f -a "init list new edit cat gen close commit delete version help git-hook"
 
 # list command options
 complete -c borzoi -n "__fish_seen_subcommand_from list" -l sort -r -d "Sort by priority or date"

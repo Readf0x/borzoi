@@ -26,6 +26,7 @@ _borzoi() {
         'delete:delete issue'
         'version:print version'
         'help:show help'
+        'git-hook:deploy git hook'
     )
 
     _arguments -C \
