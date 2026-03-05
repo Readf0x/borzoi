@@ -34,7 +34,7 @@ function __borzoi_issues
     set -l dir $PWD
     while test $dir != /
         if test -d $dir/.borzoi
-            ls $dir/.borzoi/*.md 2>/dev/null | sed 's|.*/\([0-9A-F]*\)\.md|\1|' | tr '[:upper:]' '[:lower:]'
+            ls $dir/.borzoi/*.md 2>/dev/null | sed 's|.*/\([0-9A-F]*\)\.md|\1|'
             return
         end
         set dir (dirname $dir)
