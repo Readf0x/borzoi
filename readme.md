@@ -1,7 +1,9 @@
 # Borzoi
 A CLI issue tracker that uses flat files
 
-![dog](./borzoi.png)
+<p align="center">
+  <img width="400" alt="image" src="https://github.com/user-attachments/assets/5bbb7cb7-3f2f-4021-85be-b3c732cc5d40" />
+</p>
 
 Borzoi [eats it's own dog food](https://en.wikipedia.org/wiki/Eating_your_own_dog_food).
 
