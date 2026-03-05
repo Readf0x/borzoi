@@ -35,6 +35,9 @@ rec {
               buildPhase = ''
                 odin build . -out:${projectName}
               '';
+              installPhase = ''
+                install -Dm555 ${projectName} $out/bin/${projectName}
+              '';
               meta = {
                 inherit description;
                 # homepage = "";
