@@ -33,6 +33,11 @@ cat :: proc() {
 		issue := issue_from_idstr(strings.to_upper(path))
 		status, _ := color_status(issue.status)
 
+		body := issue.body
+		if body == "" {
+			body = BRIGHT_BLACK + "<Empty body>" + RESET
+		}
+
 		if (intty) {
 			fmt.printf(
 				"\n%s%s%s %4X %s%s%s%s\n" +
@@ -49,7 +54,7 @@ cat :: proc() {
 				RESET, issue.priority, BRIGHT_BLACK,
 				RESET, format_timestamp(issue.time.time),
 
-				issue.body,
+				body,
 			)
 		} else {
 			fmt.print(issue.body)
@@ -262,11 +267,13 @@ commit :: proc() {
 	for status in strings.split_iterator(cast (^string) &porcelain, "\n") {
 		id := status[len(status)-7:len(status)-3]
 		switch status[:2] {
-		case " M":
+		case " M": fallthrough
+		case "M ":
 			append(&edited, id)
 		case "??":
 			append(&created, id)
-		case " D":
+		case " D": fallthrough
+		case "D ":
 			append(&deleted, id)
 		case:
 			handle(true, status)
@@ -280,9 +287,10 @@ commit :: proc() {
 			strings.write_string(b, ": ")
 			strings.write_string(b, strings.join(ids[:], ", "))
 		}
-		message := strings.to_string(b^)
+		message := make([]byte, len(b.buf))
+		copy(message, b.buf[:])
 		strings.builder_reset(b)
-		return message
+		return cast (string) message
 	}
 
 	message_builder := strings.builder_make()
@@ -304,8 +312,6 @@ commit :: proc() {
 
 	process_start({ "git", "add", "." })
 	process_start({ "git", "commit", "-m", strings.to_string(message_builder) })
-
-	strings.builder_destroy(&message_builder)
 
 	// reapply old index
 	apply_pr, apply_err := os2.process_start({

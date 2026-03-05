@@ -42,14 +42,9 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 	time, offset, consumed := time.rfc3339_to_time_and_offset(metadata[6][10:])
 	handle(consumed == 0, "%s:4:11: Invalid creation date '%s'", fullpath, metadata[6][10:])
 
-	body := metadata[7]
-	if body == "" {
-		body = BRIGHT_BLACK + "<Empty body>" + RESET
-	}
-
 	return {
 		id,
-		metadata[0][2:], metadata[5][10:], body,
+		metadata[0][2:], metadata[5][10:], metadata[7],
 		assignees, labels,
 		{ time, offset },
 		priority,
