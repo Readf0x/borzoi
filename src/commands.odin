@@ -268,15 +268,22 @@ commit :: proc() {
 		id := status[len(status)-7:len(status)-3]
 		switch status[:2] {
 		case " M": fallthrough
-		case "M ":
+		case "M ": fallthrough
+		case "MM":
 			append(&edited, id)
-		case "??":
+		case "??": fallthrough
+		case " A":
 			append(&created, id)
 		case " D": fallthrough
 		case "D ":
 			append(&deleted, id)
 		case:
-			handle(true, status)
+			// reapply staging since we're aborting early
+			apply_pr, apply_err := os2.process_start({
+				"..", { "git", "apply", "--cached", "--allow-empty" }, env, os2.stderr, nil, pipe_r
+			})
+			handle(apply_err != os2.ERROR_NONE, apply_err)
+			handle(true, "Unhandled porcelain status:\n%s\nTry calling `borzoi commit` again now that the DB has been removed from the staging area.", status)
 		}
 	}
 
@@ -300,18 +307,18 @@ commit :: proc() {
 		create_str(deleted[:], "deleted", &message_builder),
 		create_str(edited[:],  "edited",  &message_builder),
 	}
-	#unroll for i in 0..<3 {
-		if len(list[i]) != 0 {
-			strings.write_string(&message_builder, list[i])
-			// TODO: figure out how to remove first comparison at compile time
-			if i < 2 && len(list[i + 1]) != 0 {
-				strings.write_string(&message_builder, "; ")
-			}
+	strings.builder_destroy(&message_builder)
+
+	messages := make([dynamic]string, 0, 3)
+	for msg in list {
+		if len(msg) != 0 {
+			append(&messages, msg)
 		}
 	}
+	joined := strings.join(messages[:], "; ")
 
 	process_start({ "git", "add", "." })
-	process_start({ "git", "commit", "-m", strings.to_string(message_builder) })
+	process_start({ "git", "commit", "-m", joined })
 
 	// reapply old index
 	apply_pr, apply_err := os2.process_start({
