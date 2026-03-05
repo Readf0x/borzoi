@@ -68,7 +68,7 @@ main :: proc() {
 help :: proc(code: int) {
 	fmt.print(
 `usage: borzoi {list,new,version,help}
-       borzoi {edit,cat,close} <ISSUE>
+       borzoi {edit,cat,close} [ISSUES...]
        borzoi gen [FILES...]
 
 flat file issue tracker

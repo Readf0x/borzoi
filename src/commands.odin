@@ -12,7 +12,13 @@ import "core:os"
 import "core:time"
 
 edit :: proc() {
-	editor(get_issue_path())
+	if len(os.args) < 3 {
+		fmt.println("Missing id")
+		os.exit(1)
+	}
+	for issue in os.args[2:] {
+		editor(issue_exists(issue))
+	}
 }
 
 gen :: proc() {
@@ -28,8 +34,15 @@ init :: proc() {
 }
 
 cat :: proc() {
-	data, _ := os2.read_entire_file_from_path(get_issue_path(), context.allocator)
-	fmt.print(cast (string) data)
+	if len(os.args) < 3 {
+		fmt.println("Missing id")
+		os.exit(1)
+	}
+	for issue in os.args[2:] {
+		data, _ := os2.read_entire_file_from_path(issue_exists(issue), context.allocator)
+		fmt.println(strings.concatenate({ BOLD, YELLOW, "Issue ", issue, RESET }))
+		fmt.print(cast (string) data)
+	}
 }
 
 close :: proc() {
