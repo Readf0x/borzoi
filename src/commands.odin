@@ -73,7 +73,8 @@ list :: proc() {
 	}
 
 	sep := "  "
-	if (posix.isatty(cast (posix.FD) os2.fd(os2.stdout))) {
+	intty := posix.isatty(cast (posix.FD) os2.fd(os2.stdout))
+	if (intty) {
 		fmt.println(strings.concatenate({
 			BRIGHT_BLACK,
 			UNDERLINE, "id  ", NO_UNDERLINE, "  ",
@@ -87,12 +88,21 @@ list :: proc() {
 	buf := make([]byte, 4)
 	for issue in issues {
 		id := strconv.write_uint(buf, u64(issue.id), 16)
-		status_string, _ := fmt.enum_value_to_string(issue.status)
+		id = strings.concatenate({ strings.repeat("0", 4 - len(id)), id })
+		status_string: string
+		status_string_len: int
+		if (intty) {
+			status_string, status_string_len = color_status(issue.status)
+			id = strings.concatenate({ YELLOW, id, RESET })
+		} else {
+			status_string, _ = fmt.enum_value_to_string(issue.status)
+			status_string_len = len(status_string)
+		}
 		fmt.println(
 			strings.concatenate({
-				strings.repeat("0", 4 - len(id)), id, sep,
+				id, sep,
 				issue.title, strings.repeat(" ", max_title - len(issue.title)), sep,
-				status_string, strings.repeat(" ", 3 - (len(status_string) - 4)), sep,
+				status_string, strings.repeat(" ", 3 - (status_string_len - 4)), sep,
 				format_timestamp(issue.time),
 			}),
 		)

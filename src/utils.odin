@@ -27,6 +27,23 @@ format :: proc(str: string, codes: []string, allocator := context.allocator, loc
 	return strings.concatenate(parts, allocator, loc)
 }
 
+color_status :: proc(status: Status) -> (formatted: string, length: int) {
+	str, _ := fmt.enum_value_to_string(status)
+	length = len(str)
+
+	switch status {
+	case .Open:
+		formatted = strings.concatenate({ GREEN, str, RESET })
+	case .Closed:
+		formatted = strings.concatenate({ MAGENTA, str, RESET })
+	case .Wontfix:
+		formatted = strings.concatenate({ BRIGHT_BLACK, str, RESET })
+	case .Ongoing:
+		formatted = strings.concatenate({ YELLOW, str, RESET })
+	}
+	return
+}
+
 start_process :: proc(command: []string, allocator := context.allocator) -> os2.Error {
 	env, _ := os2.environ(context.allocator)
 	pr, err := os2.process_start(os2.Process_Desc{
