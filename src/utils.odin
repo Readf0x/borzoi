@@ -152,7 +152,7 @@ handle_format :: #force_inline proc(when_this: bool, format: string, args: ..any
 	}
 }
 
-handle :: proc{ handle_any, handle_proc_user, handle_format }
+handle :: proc{ handle_any, handle_proc_user, handle_proc, handle_format }
 
 @(require_results)
 list_args_parse :: proc(args: ^List_Args) -> (List_Filter) {

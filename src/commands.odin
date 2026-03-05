@@ -38,10 +38,29 @@ cat :: proc() {
 			body = BRIGHT_BLACK + "<Empty body>" + RESET
 		}
 
+		assign_str: string
+		if len(issue.assignees[0]) != 0 {
+			assign_str = fmt.bprintf(make([]byte, 512),
+				"  Assigned to: %s%s%s",
+				RESET, strings.join(issue.assignees, BRIGHT_BLACK + ", " + RESET), BRIGHT_BLACK
+			)
+		}
+		label_str: string
+		if len(issue.labels[0]) != 0 {
+			label_str = fmt.bprintf(make([]byte, 512),
+				"  Labels: %s%s%s",
+				YELLOW, strings.join(issue.labels, BRIGHT_BLACK + ", " + YELLOW), BRIGHT_BLACK
+			)
+		}
+
+		// Naive implementation, works for now but we need do actual wrapping eventually.
+		both := len(assign_str) != 0 && len(label_str) != 0
+		single := len(assign_str) + len(label_str) != 0 && !both
+
 		if (intty) {
 			fmt.printf(
 				"\n%s%s%s %4X %s%s%s%s\n" +
-				"%sStatus: %s%s%s  Author: %s%s%s  Priority: %s%d%s  Created: %s%s\n\n%s",
+				"%sStatus: %s%s%s  Priority: %s%d%s%s%s%sAuthor: %s%s%s%sCreated: %s%s\n\n%s",
 
 				BG_BLUE, BRIGHT_BLACK, BOLD, issue.id, BLACK, issue.title,
 				strings.repeat(" ",
@@ -50,8 +69,11 @@ cat :: proc() {
 				RESET,
 
 				BRIGHT_BLACK, RESET, status, BRIGHT_BLACK,
-				RESET, issue.author, BRIGHT_BLACK,
 				RESET, issue.priority, BRIGHT_BLACK,
+				assign_str, label_str,
+				both ? "\n" : "  ",
+				RESET, issue.author, BRIGHT_BLACK,
+				single ? "\n" : "  ",
 				RESET, format_timestamp(issue.time.time),
 
 				body,
