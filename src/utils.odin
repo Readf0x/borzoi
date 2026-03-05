@@ -120,36 +120,115 @@ get_username :: proc() -> (string, os2.Error) {
 handle_any :: #force_inline proc(when_this: bool, err: any, loc := #caller_location) {
 	when ODIN_DEBUG {
 		assert(!when_this, fmt.bprintf(make([]byte, 256), "%v", err), loc)
-	}
-	when !ODIN_DEBUG {
+	} else {
 		if when_this {
 			fmt.printfln("%v", err)
 			os.exit(1)
 		}
 	}
 }
-handle_proc :: #force_inline proc(when_this: bool, callback: proc(user_data: rawptr), user_data: rawptr, loc := #caller_location) {
+handle_proc_user :: #force_inline proc(when_this: bool, callback: proc(user_data: rawptr), user_data: rawptr, loc := #caller_location) {
 	if when_this {
 		when ODIN_DEBUG do fmt.printfln("%v", loc)
 		#force_inline callback(user_data)
 		when ODIN_DEBUG do runtime.trap()
-		when !ODIN_DEBUG do os.exit(1)
+		else do os.exit(1)
 	}
 }
-handle_format :: proc(when_this: bool, format: string, args: ..any, loc := #caller_location) {
+handle_proc :: #force_inline proc(when_this: bool, callback: proc(), loc := #caller_location) {
+	if when_this {
+		when ODIN_DEBUG do fmt.printfln("%v", loc)
+		#force_inline callback()
+		when ODIN_DEBUG do runtime.trap()
+		else do os.exit(1)
+	}
+}
+handle_format :: #force_inline proc(when_this: bool, format: string, args: ..any, loc := #caller_location) {
 	if when_this {
 		when ODIN_DEBUG do fmt.printfln("%v", loc)
 		fmt.printfln(format, ..args)
 		when ODIN_DEBUG do runtime.trap()
-		when !ODIN_DEBUG do os.exit(1)
+		else do os.exit(1)
 	}
 }
 
-handle :: proc{ handle_any, handle_proc, handle_format }
+handle :: proc{ handle_any, handle_proc_user, handle_format }
 
 @(require_results)
 list_args_parse :: proc(args: ^List_Args) -> (List_Filter) {
-	flags.parse(args, os.args[2:], .Unix)
+	err := flags.parse(args, os.args[2:], .Unix)
+	handle(err != flags.Error(nil), proc(rawerr: rawptr) {
+		err := cast (^flags.Error) rawerr
+		// doesn't accept files so there shouldn't be Open_File_Error
+		#partial switch t in err {
+		case flags.Parse_Error:
+			when !ODIN_DEBUG do fmt.printfln("Parse error: %s", t.message)
+			else do fmt.printfln("Parse error: %v, %s", t.reason, t.message)
+		case flags.Validation_Error:
+			fmt.printfln("Validation error: %s", t.message)
+		case flags.Help_Request:
+			fmt.println(
+				"usage: borzoi list [OPTIONS]\n\n" +
+
+				"Options:\n" +
+				"  --sort <value>\n" +
+				"        Set the value to sort by. Possible values: *priority*, date\n\n" +
+
+				"  --reverse\n" +
+				"        Reverse the sort order.\n\n" +
+
+				"  --text <string>\n" +
+				"        Search for issues containing <string> in title or body.\n\n" +
+
+				"  --title <string>\n" +
+				"        Search for issues containing <string> in title.\n\n" +
+
+				"  --body <string>\n" +
+				"        Search for issues containing <string> in body.\n\n" +
+
+				"  --status <status>\n" +
+				"        Filter by status. Possible values: (*Open*, Closed, Wontfix, *Ongoing*).\n" +
+				"        Can be specified multiple times.\n\n" +
+
+				"  --closed\n" +
+				"        Show only closed issues (Closed and Wontfix).\n\n" +
+
+				"  --all\n" +
+				"        Show all issues regardless of status.\n\n" +
+
+				"  --priority <NUM>\n" +
+				"        Show issues with exact priority <num>.\n\n" +
+
+				"  --min-priority <num>\n" +
+				"        Show issues with priority at least <num>.\n\n" +
+
+				"  --max-priority <num>\n" +
+				"        Show issues with priority at most <num>.\n\n" +
+
+				"  --created-on <date>\n" +
+				"        Show issues created on <date> (YYYY-MM-DD format).\n\n" +
+
+				"  --created-before <date>\n" +
+				"        Show issues created before <date>.\n\n" +
+
+				"  --created-after <date>\n" +
+				"        Show issues created after <date>.\n\n" +
+
+				"  --author <name>\n" +
+				"        Filter by author.\n" +
+				"        Can be specified multiple times.\n\n" +
+
+				"  --assignee <name>\n" +
+				"        Filter by assignee.\n" +
+				"        Can be specified multiple times.\n\n" +
+
+				"  --label <label>\n" +
+				"        Filter by label.\n" +
+				"        Can be specified multiple times."
+			)
+			os.exit(0)
+		}
+	}, &err)
 
 	filter: List_Filter = {
 		statuses = { .Open, .Ongoing },

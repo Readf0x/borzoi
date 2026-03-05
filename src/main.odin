@@ -46,14 +46,14 @@ main :: proc() {
 }
 
 help :: proc(code: int) {
-	fmt.print(
-		"usage: borzoi {init,list,new,commit,version,help}\n" +
+	fmt.println(
+		"flat file issue tracker\n\n" +
+
+		"Usage: borzoi {init,list,new,commit,version,help}\n" +
 		"       borzoi {edit,cat,close,delete} [ISSUES...]\n" +
 		"       borzoi gen [FILES...]\n\n" +
 
-		"flat file issue tracker\n\n" +
-
-		"positional arguments:\n" +
+		"Positional arguments:\n" +
 		"  {init,list,new,edit,cat,gen,close,commit,delete,version,help}\n" +
 		"    init     initialize repository\n" +
 		"    list     list issues\n" +
