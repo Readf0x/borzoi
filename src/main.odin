@@ -5,7 +5,7 @@ import "core:os/os2"
 import "core:fmt"
 import "core:os"
 
-Command :: enum { init, list, edit, cat, new, gen, close, commit, delete, version, help }
+Command :: enum { init, list, edit, cat, new, gen, close, commit, delete, template, version, help }
 no_db_needed : bit_set[Command] : { .version, .init, .help }
 
 main :: proc() {
@@ -36,17 +36,18 @@ main :: proc() {
 	}
 
 	switch command {
-		case .init:    init()
-		case .list:    list()
-		case .edit:    edit()
-		case .new:     new()
-		case .cat:     cat()
-		case .gen:     gen()
-		case .close:   close()
-		case .commit:  commit()
-		case .delete:  delete_issue()
-		case .version: version()
-		case .help:    help(0)
+		case .init:     init()
+		case .list:     list()
+		case .edit:     edit()
+		case .new:      new()
+		case .cat:      cat()
+		case .gen:      gen()
+		case .close:    close()
+		case .commit:   commit()
+		case .delete:   delete_issue()
+		case .template: template()
+		case .version:  version()
+		case .help:     help(0)
 	}
 }
 
