@@ -17,11 +17,35 @@ main :: proc() {
 	if !exists {
 		help(1)
 	}
+
+	for !os2.exists(".borzoi") {
+		dir, err := os2.get_working_directory(context.allocator)
+		if err != os2.ERROR_NONE {
+			fmt.println(err)
+			os.exit(1)
+		}
+		if dir == "/" {
+			fmt.println("No DB")
+		}
+		err = os2.change_directory("../")
+		if err != os2.ERROR_NONE {
+			fmt.println(err)
+			os.exit(1)
+		}
+	}
+	err := os2.change_directory(".borzoi")
+	if err != os2.ERROR_NONE {
+		fmt.println(err)
+		os.exit(1)
+	}
+
 	switch command {
+	case .init:
+		init()
 	case .list:
 		list()
-	case .open:
-		open()
+	case .edit:
+		edit()
 	case .new:
 		new()
 	case .cat:
@@ -30,6 +54,8 @@ main :: proc() {
 		gen()
 	case .close:
 		close()
+	// case .commit:
+	// 	commit()
 	case .version:
 		version()
 	case .help:
@@ -38,28 +64,31 @@ main :: proc() {
 }
 
 Commands :: enum {
+	init,
 	list,
-	open,
+	edit,
 	cat,
 	new,
 	gen,
 	close,
+	// commit,
 	version,
 	help,
 }
 
 help :: proc(code: int) {
 	fmt.print(
-`usage: borzoi {list,new,open,cat,gen,close,version,help}
+`usage: borzoi {list,new,version,help}
+       borzoi {edit,cat,close} <ISSUE>
        borzoi gen [FILES...]
 
 flat file issue tracker
 
 positional arguments:
-  {list,new,open,cat,gen,close,version,help}
+  {list,new,edit,cat,gen,close,version,help}
     list     list issues
     new      new issue
-    open     open issue in editor
+    edit     open issue in editor
     cat      print issue
     gen      generate issue from todo
     close    close issue
@@ -75,7 +104,7 @@ version :: proc() {
 	os.exit(0)
 }
 
-open :: proc() {
+edit :: proc() {
 	editor(getIssuePath())
 }
 
@@ -84,7 +113,7 @@ getIssuePath :: proc() -> string {
 		fmt.println("Missing id")
 		os.exit(1)
 	}
-	issuePath := strings.concatenate({ "./.borzoi/", os.args[2] })
+	issuePath := os.args[2]
 	_, err := os2.stat(issuePath, context.allocator)
 	if err != os2.ERROR_NONE {
 		switch err {
@@ -102,19 +131,22 @@ editor :: proc(path: string) {
 	editor := os.get_env("VISUAL")
 	if editor == "" {
 		editor = os.get_env("EDITOR")
+		if editor == "" {
+			editor = "vim"
+		}
 	}
-	env, _ := os2.environ(context.allocator)
-	pr, errr := os2.process_start(os2.Process_Desc{
-		".", { editor, path }, env, os2.stderr, os2.stdout, os2.stderr
-	})
-	if errr != os2.ERROR_NONE {
-		fmt.println(errr)
-		os.exit(1)
-	}
-	_, _ = os2.process_wait(pr)
+	err := start_process({ editor, path })
 }
 
 gen :: proc() {
+	fmt.println("WIP")
+}
+
+init :: proc() {
+	err := os2.mkdir(".borzoi")
+	if err != os2.ERROR_NONE {
+		fmt.println(err)
+	}
 }
 
 cat :: proc() {
@@ -122,7 +154,21 @@ cat :: proc() {
 	fmt.print(cast (string)data)
 }
 
-close :: proc() {}
+close :: proc() {
+	fmt.println("WIP")
+}
+
+start_process :: proc(command: []string, allocator := context.allocator) -> os2.Error {
+	env, _ := os2.environ(context.allocator)
+	pr, err := os2.process_start(os2.Process_Desc{
+		".", command, env, os2.stderr, os2.stdout, os2.stderr
+	})
+	if err != os2.ERROR_NONE {
+		return err
+	}
+	_, _ = os2.process_wait(pr)
+	return os2.ERROR_NONE
+}
 
 format_timestamp :: proc(t: Time) -> string {
 	b: strings.Builder = strings.builder_make()

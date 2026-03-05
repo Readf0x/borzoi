@@ -10,7 +10,6 @@ import "core:os"
 import "core:time"
 
 new :: proc() {
-	os2.change_directory("./.borzoi")
 	files, err := os2.read_directory_by_path(".", 0, context.temp_allocator)
 	if err != os2.ERROR_NONE {
 		fmt.println(err)
