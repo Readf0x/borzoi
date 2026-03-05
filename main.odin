@@ -23,17 +23,17 @@ main :: proc() {
 		help(1)
 	}
 	switch command {
-	case Commands.list:
+	case .list:
 		list()
-	case Commands.open:
+	case .open:
 		open()
-	case Commands.new:
+	case .new:
 		new()
-	case Commands.cat:
+	case .cat:
 		cat()
-	case Commands.gen:
+	case .gen:
 		gen()
-	case Commands.help:
+	case .help:
 		help(0)
 	}
 }
