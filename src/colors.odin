@@ -1,3 +1,4 @@
+#+feature dynamic-literals
 package main
 
 RESET             :: "\033[0m"
@@ -5,7 +6,12 @@ BOLD              :: "\033[1m"
 DIM               :: "\033[2m"
 ITALIC            :: "\033[3m"
 UNDERLINE         :: "\033[4m"
+STRIKETHROUGH     :: "\033[9m"
 NO_UNDERLINE      :: "\033[24m"
+NO_BOLD           :: "\033[22m"
+NO_DIM            :: "\033[22m"
+NO_ITALIC         :: "\033[23m"
+NO_STRIKETHROUGH  :: "\033[29m"
 BLACK             :: "\033[30m"
 RED               :: "\033[31m"
 GREEN             :: "\033[32m"
@@ -38,3 +44,12 @@ BG_BRIGHT_BLUE    :: "\033[104m"
 BG_BRIGHT_MAGENTA :: "\033[105m"
 BG_BRIGHT_CYAN    :: "\033[106m"
 BG_BRIGHT_WHITE   :: "\033[107m"
+
+HEADER_COLORS : map[u32]string = {
+	1 = BLACK   + BOLD + BG_BLUE + "󰲡 ",
+	2 = RED     + BOLD + "󰲣 ",
+	3 = YELLOW  + BOLD + "󰲥 ",
+	4 = GREEN   + BOLD + "󰲧 ",
+	5 = BLUE    + BOLD + "󰲩 ",
+	6 = MAGENTA + BOLD + "󰲫 ",
+}

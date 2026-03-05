@@ -20,13 +20,9 @@ rec {
         ({
           projectName,
         }: rec {
-          devShells = {
-            default = pkgs.mkShell {
-              packages = with pkgs; [ odin ];
-            };
-            debug = pkgs.mkShell {
-              packages = with pkgs; [ odin packages.default ];
-            };
+          devShells.default = pkgs.mkShell {
+            packages = with pkgs; [ odin md4c ];
+            LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.md4c ];
           };
           packages = {
             ${projectName} = pkgs.stdenv.mkDerivation (final: {
@@ -35,7 +31,7 @@ rec {
 
               src = ./.;
 
-              nativeBuildInputs = with pkgs; [ odin ];
+              nativeBuildInputs = with pkgs; [ odin md4c ];
               buildInputs = [];
 
               VERSIONSTR = "borzoi version ${final.version}, built from commit ${self.sourceInfo.shortRev or self.sourceInfo.dirtyShortRev} with nix";
@@ -49,6 +45,9 @@ rec {
               };
             });
             default = packages.${projectName};
+            debug = pkgs.mkShell {
+              packages = with pkgs; [ bash zsh fish packages.default ];
+            };
           };
         })
         info;
