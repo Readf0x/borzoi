@@ -63,7 +63,6 @@ new :: proc() {
 	utc_offset := get_utc_offset()
 	issuestr := issue_to_string(Issue{
 		author = cast (string) username,
-		// Issue(BE38): Local time formatting
 		time = { time.now(), utc_offset },
 		priority = 1,
 	})

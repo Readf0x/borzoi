@@ -12,7 +12,6 @@ import "core:time"
 format_timestamp :: proc(t: Time) -> string {
 	b: strings.Builder = strings.builder_make()
 
-	// Issue(BE38): Local time formatting
 	post_offset: time.Time = { t.time._nsec + ( i64(t.utc_offset) * i64(time.Minute) ) }
 	year, month, day := time.date(post_offset)
 	hour, minute, sec := time.clock_from_time(post_offset)
