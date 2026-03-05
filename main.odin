@@ -141,6 +141,7 @@ Status :: enum {
 	Open,
 	Closed,
 	Wontfix,
+	Ongoing,
 }
 
 format :: proc(str: string, codes: []string, allocator := context.allocator, loc := #caller_location) -> string {
