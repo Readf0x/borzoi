@@ -33,7 +33,7 @@ _borzoi_completions() {
             return 0
             ;;
         list)
-            COMPREPLY=( $(compgen -W "-a" -- ${cur}) )
+            COMPREPLY=( $(compgen -W "--sort --reverse --text --title --body --status --closed --all --priority --min-priority --max-priority --created-on --created-before --created-after --author --assignee --label" -- ${cur}) )
             return 0
             ;;
         edit|cat|close|delete)

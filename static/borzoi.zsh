@@ -40,7 +40,23 @@ _borzoi() {
             case $words[2] in
                 list)
                     _arguments \
-                        '-a[list all issues]'
+                        '--sort=[sort by priority or date]:sort:(priority date)' \
+                        '--reverse[reverse sort order]' \
+                        '--text=[search in title and body]:string' \
+                        '--title=[search in title]:string' \
+                        '--body=[search in body]:string' \
+                        '--status=[filter by status]:status:(Open Closed Wontfix Ongoing)' \
+                        '--closed[show only closed issues]' \
+                        '--all[show all issues]' \
+                        '--priority=[exact priority]:number' \
+                        '--min-priority=[minimum priority]:number' \
+                        '--max-priority=[maximum priority]:number' \
+                        '--created-on=[created on date]:date' \
+                        '--created-before=[created before date]:date' \
+                        '--created-after=[created after date]:date' \
+                        '--author=[filter by author]:string' \
+                        '--assignee=[filter by assignee]:string' \
+                        '--label=[filter by label]:string'
                     ;;
                 edit|cat|close|delete)
                     local borzoi_dir
