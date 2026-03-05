@@ -46,7 +46,7 @@ function __borzoi_issues
     set -l dir $PWD
     while test $dir != /
         if test -d $dir/.borzoi
-            ls $dir/.borzoi/*.md 2>/dev/null | grep -E '/[0-9A-F]{4}\.md$' | sed 's|.*/\([0-9A-F]\{4\}\)\.md|\1|'
+            ls $dir/.borzoi/*.md 2>/dev/null | command grep -E '/[0-9A-F]{4}\.md$' | command sed 's|.*/\([0-9A-F]\{4\}\)\.md|\1|'
             return
         end
         set dir (dirname $dir)
@@ -69,7 +69,7 @@ function __borzoi_templates
     set -l dir $PWD
     while test $dir != /
         if test -d $dir/.borzoi
-            ls $dir/.borzoi/*.md 2>/dev/null | grep -E '/template\..*\.md$' | sed 's|.*/template\.\(.*\)\.md|\1|'
+            ls $dir/.borzoi/*.md 2>/dev/null | command grep -E '/template\..*\.md$' | command sed 's|.*/template\.\(.*\)\.md|\1|'
             return
         end
         set dir (dirname $dir)
