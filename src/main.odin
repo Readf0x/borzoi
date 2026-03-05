@@ -55,8 +55,10 @@ help :: proc(code: int) {
 	fmt.println(
 		"flat file issue tracker\n\n" +
 
-		"Usage: borzoi {init,list,new,commit,version,help}\n" +
+		"Usage: borzoi {init,list,new,commit,version,help} [OPTIONS...]\n" +
 		"       borzoi {edit,cat,close,delete} [ISSUES...]\n" +
+		"       borzoi template {cat,new} <NAME>\n" +
+		"       borzoi template list\n" +
 		"       borzoi gen [FILES...]\n\n" +
 
 		"Positional arguments:\n" +
