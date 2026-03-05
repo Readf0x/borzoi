@@ -1,5 +1,6 @@
 package main
 
+import "core:sys/posix"
 import "core:os/os2"
 import "core:strings"
 import "core:fmt"
@@ -87,4 +88,6 @@ issue_exists :: proc(issue: string) -> string {
 	}
 	return issue
 }
+
+intty: bool
 
