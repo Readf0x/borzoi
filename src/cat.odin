@@ -44,22 +44,22 @@ cat :: proc() {
 		if (intty) {
 			if i > 0 do fmt.print("\n")
 			fmt.printf(
-				"%s%s%s %4X %s%s%s%s\n" +
-				"%sStatus: %s%s%s  Priority: %s%d%s%s%s%sAuthor: %s%s%s%sCreated: %s%s\n%s",
+				// Man this is hard to read...
+				BG_BLUE+BRIGHT_BLACK+BOLD+" %4X "+BLACK+"%s%s"+RESET+"\n" +
+				BRIGHT_BLACK+"Status: "+RESET+"%s"+BRIGHT_BLACK+"  Priority: "+RESET+"%d"+BRIGHT_BLACK+"%s%s%s"+RESET+"Author: %s"+BRIGHT_BLACK+"%s"+RESET+"Created: %s\n%s",
 
-				BG_BLUE, BRIGHT_BLACK, BOLD, issue.id, BLACK, issue.title,
+				issue.id, issue.title,
 				strings.repeat(" ",
 					math.max(73-len(issue.title), 0)+1
 				),
-				RESET,
 
-				BRIGHT_BLACK, RESET, status, BRIGHT_BLACK,
-				RESET, issue.priority, BRIGHT_BLACK,
+				status,
+				issue.priority,
 				assign_str, label_str,
 				both ? "\n" : "  ",
-				RESET, issue.author, BRIGHT_BLACK,
+				issue.author,
 				single ? "\n" : "  ",
-				RESET, format_timestamp(issue.time),
+				format_timestamp(issue.time),
 
 				body,
 			)

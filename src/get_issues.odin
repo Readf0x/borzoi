@@ -131,9 +131,9 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 					issue.status, ok = fmt.string_to_enum_value(Status, str)
 					handle(!ok, "%s:%d:%d: Invalid status '%s'", fullpath, current_line, pos - offset, str)
 				case .priori:
-					priority, atoi_ok := strconv.parse_uint(str)
-					handle(!atoi_ok, "%s:%d:%d: Invalid priority '%s'", fullpath, current_line, pos - offset, str)
-					issue.priority = priority
+					ok: bool
+					issue.priority, ok = strconv.parse_uint(str)
+					handle(!ok, "%s:%d:%d: Invalid priority '%s'", fullpath, current_line, pos - offset, str)
 				case .assign:
 					issue.assignees = strings.split(str, ", ")
 				case .labels:
@@ -141,12 +141,11 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 				case .author:
 					issue.author = str
 				case .crdate:
-					time, offset, consumed := time.rfc3339_to_time_and_offset(str)
+					consumed: int
+					issue.time.time, issue.time.utc_offset, consumed = time.rfc3339_to_time_and_offset(str)
 					handle(consumed == 0, "%s:%d:%d: Invalid creation date '%s'", fullpath, current_line, pos - offset, str)
-					issue.time = { time, offset }
 				}
 				values_filled |= { current }
-				handle(current not_in values_filled, "not there??")
 				current_action = .checking_key
 				pos = eol-1
 			}
