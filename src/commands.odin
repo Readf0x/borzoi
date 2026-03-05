@@ -108,8 +108,8 @@ list :: proc() {
 	buf := make([]byte, 4)
 	for issue in issues {
 		id := fmt.bprintf(buf, "%4X", issue.id)
-		status_string: string
-		status_string_len: int
+		status_string     : string = ---
+		status_string_len : int    = ---
 		if (intty) {
 			status_string, status_string_len = color_status(issue.status)
 			id = strings.concatenate({ YELLOW, id, RESET })

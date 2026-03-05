@@ -17,16 +17,16 @@ Commands :: enum {
 }
 
 Issue :: struct {
-	id: uint,
-	title, author, body: string,
-	time: Time,
-	priority: uint,
-	status: Status,
+	id                  : uint,
+	title, author, body : string,
+	time                : Time,
+	priority            : uint,
+	status              : Status,
 }
 
 Time :: struct {
-	time: time.Time,
-	utc_offset: int,
+	time       : time.Time,
+	utc_offset : int,
 }
 
 Status :: enum {
