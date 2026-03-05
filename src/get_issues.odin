@@ -9,13 +9,13 @@ import "core:path/filepath"
 import "core:os"
 import "core:time"
 
-getIssues :: proc(sort: proc(a, b: Issue) -> bool = defaultIssueSort, allocator := context.allocator, loc := #caller_location) -> [dynamic]Issue {
+get_issues :: proc(sort: proc(a, b: Issue) -> bool = default_issue_sort, allocator := context.allocator, loc := #caller_location) -> [dynamic]Issue {
 	issues := make([dynamic]Issue, 0, 128, allocator, loc)
 	filepath.walk(".", walk, &issues)
 	slice.sort_by(issues[:], sort)
 	return issues
 }
-defaultIssueSort :: proc(a, b: Issue) -> bool {
+default_issue_sort :: proc(a, b: Issue) -> bool {
 	if a.priority != b.priority {
 		return a.priority > b.priority
 	}
@@ -33,7 +33,7 @@ walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: o
 			fmt.println(err)
 			os.exit(1)
 		}
-		metadata := strings.split_lines_n(cast(string)data, 6)
+		metadata := strings.split_lines_n(cast (string) data, 6)
 
 		id, _ := strconv.parse_uint(info.name, 16)
 		status, enum_ok := fmt.string_to_enum_value(Status, metadata[1][10:])
