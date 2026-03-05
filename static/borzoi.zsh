@@ -25,6 +25,7 @@ _borzoi() {
         'commit:commit changes'
         'delete:delete issue'
         'version:print version'
+				'template:manage templates'
         'help:show help'
         'git-hook:deploy git hook'
     )
@@ -59,7 +60,42 @@ _borzoi() {
                         '--assignee=[filter by assignee]:string' \
                         '--label=[filter by label]:string'
                     ;;
-                edit|cat|close|delete)
+                template)
+                    _arguments \
+                        'new' \
+                        'cat' \
+                        'list'
+                    ;;
+                cat)
+                    # Check if this is "template cat" or just "cat"
+                    local is_template_cat=0
+                    for word in $words; do
+                        if [[ $word == "template" ]]; then
+                            is_template_cat=1
+                            break
+                        fi
+                    done
+
+                    if [[ $is_template_cat -eq 1 ]]; then
+                        # Complete with template names
+                        local borzoi_dir
+                        if borzoi_dir=$(__find_borzoi_dir); then
+                            local -a templates
+                            templates=(${${(f)"$(ls $borzoi_dir/template.*.md 2>/dev/null | sed 's|.*/template\.\(.*\)\.md|\1|')"}##*/})
+                            _describe -t templates 'template name' templates
+                        fi
+                    else
+                        # Complete with issue IDs
+                        local borzoi_dir
+                        if borzoi_dir=$(__find_borzoi_dir); then
+                            local -a issues
+                            issues=(${${(f)"$(ls $borzoi_dir/*.md 2>/dev/null)"}##*/})
+                            issues=(${issues%.md})
+                            _describe -t issues 'issue ID' issues
+                        fi
+                    fi
+                    ;;
+                edit|close|delete)
                     local borzoi_dir
                     if borzoi_dir=$(__find_borzoi_dir); then
                         local -a issues
