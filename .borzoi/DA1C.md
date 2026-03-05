@@ -2,7 +2,7 @@
 - STATUS: Open
 - PRIORI: 1
 - ASSIGN: 
-- LABELS: 
+- LABELS: templates
 - AUTHOR: readf0x
 - CRDATE: 2025-12-09T21:33:21Z
 A good plan for this would be having `name.template.md` inside the DB which

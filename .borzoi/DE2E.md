@@ -2,7 +2,7 @@
 - STATUS: Open
 - PRIORI: 4
 - ASSIGN: 
-- LABELS: 
+- LABELS: gen
 - AUTHOR: readf0x
 - CRDATE: 2025-12-06T19:12:32Z
 The generate command should search through specified files (or all files if none
