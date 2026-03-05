@@ -23,10 +23,7 @@ default_issue_sort :: proc(a, b: Issue) -> bool {
 	return a.time._nsec > b.time._nsec
 }
 walk :: proc(info: os.File_Info, in_err: os.Error, user_data: rawptr) -> (err: os.Error, skip_dir: bool) {
-	if in_err != 0 {
-		fmt.println(in_err)
-		os.exit(1)
-	}
+	handle(in_err != 0, in_err)
 	pattern, _ := regex.create_by_user(`/^[0-9A-F]{4}\.md$/`)
 	if _, success := regex.match(pattern, info.name); success {
 		append(cast (^[dynamic]Issue) user_data, issue_from_idstr(info.name[:4]))
