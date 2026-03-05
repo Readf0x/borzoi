@@ -18,15 +18,16 @@ Commands :: enum {
 Issue :: struct {
 	id: uint,
 	title, author, body: string,
-	time: Time,
+	time: time.Time,
 	priority: uint,
 	status: Status,
 }
 
-Time :: struct {
-	time: time.Time,
-	utc_offset: int,
-}
+// Why are we storing the original utc offset??
+// Time :: struct {
+// 	time: time.Time,
+// 	utc_offset: int,
+// }
 
 Status :: enum {
 	Open,
