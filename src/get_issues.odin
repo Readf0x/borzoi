@@ -30,17 +30,17 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 	fullpath, _ := os2.get_working_directory(context.allocator)
 	fullpath = strings.concatenate({ fullpath, "/", filename })
 
-	issue: Issue
+	issue: Issue = {
+		id = id,
+		priority = 1,
+	}
 
 	offset := 0
 	current_action : enum {
-		looking_for_yaml,
-		looking_for_key,
 		checking_key,
 		checking_value,
-		looking_for_title,
 	}
-	current: enum {
+	keys :: enum {
 		none,
 		status,
 		priori,
@@ -48,11 +48,15 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 		labels,
 		author,
 		crdate,
-	} = .none
-	values_filled := 0
-	yaml_lines := 0
+	}
+	current: keys = .none
+	in_yaml := false
+	yaml_end := false
 	current_line := 1
 	colon_pos: int = ---
+
+	values_filled : bit_set[keys] = {}
+	required_values : bit_set[keys] : { .author, .crdate, .status }
 
 	char: byte = ---
 	for pos := 0; pos < len(data); pos += 1 {
@@ -62,16 +66,30 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 			current_line += 1
 			continue
 		}
-		switch current_action {
-		case .looking_for_yaml:
-			if char == '-' {
-				if yaml_lines == 3 do current_action = .looking_for_key
-				else do yaml_lines += 1
+		if !yaml_end && cast (string) data[pos:pos+4] == "---\n" {
+			if !in_yaml {
+				in_yaml = true
+				pos += 2
+				continue
+			} else {
+				yaml_end = true
+				in_yaml = false
 			}
-			else do handle(true, "%s:%d:%d: Invalid character: '%c'", fullpath, current_line, pos - offset, char)
-		case .looking_for_key:
+		} else if cast (string) data[pos:pos+2] == "# " {
+			sb := strings.builder_make()
+			pos += 2
+			for char in data[pos:] {
+				if char == '\n' do break
+				else do strings.write_byte(&sb, char)
+				pos += 1
+			}
+			issue.title = strings.to_string(sb)
+			issue.body = cast (string) data[pos+1:]
+			break
+		}
+		if in_yaml do switch current_action {
 		case .checking_key:
-			key := string(data[pos:pos + 7 - offset])
+			key := string(data[offset+1:offset+7])
 			switch key {
 			case "status":
 				current = .status
@@ -86,33 +104,56 @@ issue_from_idstr :: proc(idstr: string) -> Issue {
 			case "crdate":
 				current = .crdate
 			case:
-				handle(true, "%s:%d:%d: Unknown key: '%s'", fullpath, current_line, pos - offset, key)
+				rep, _ := strings.replace_all(key, "\n", "\\n")
+				handle(true, "%s:%d:%d: Unknown key: '%s'", fullpath, current_line, pos - offset, rep)
 			}
-			pos += 7
+			pos += 6
+			current_action = .checking_value
 		case .checking_value:
 			if current != .none {
 				prefix := 0
-				for char, i in data[colon_pos:] {
-					if char == ' ' do prefix += 1
-					else do break
+				eol := 0
+				found := false
+				for char, i in data[pos:] {
+					if char == ' ' && !found do prefix += 1
+					else if char == '\n' {
+						eol = pos+i
+						break
+					}
+					else do found = true
 				}
-				str := cast (string) buf[prefix:pos-offset-1]
+				pos += prefix
+				str := cast (string) data[pos:eol]
 
 				#partial switch current {
 				case .status:
-					status, ok := fmt.string_to_enum_value(Status, str)
+					ok: bool
+					issue.status, ok = fmt.string_to_enum_value(Status, str)
 					handle(!ok, "%s:%d:%d: Invalid status '%s'", fullpath, current_line, pos - offset, str)
 				case .priori:
+					priority, atoi_ok := strconv.parse_uint(str)
+					handle(!atoi_ok, "%s:%d:%d: Invalid priority '%s'", fullpath, current_line, pos - offset, str)
+					issue.priority = priority
 				case .assign:
+					issue.assignees = strings.split(str, ", ")
 				case .labels:
+					issue.labels = strings.split(str, ", ")
 				case .author:
+					issue.author = str
 				case .crdate:
+					time, offset, consumed := time.rfc3339_to_time_and_offset(str)
+					handle(consumed == 0, "%s:%d:%d: Invalid creation date '%s'", fullpath, current_line, pos - offset, str)
+					issue.time = { time, offset }
 				}
-				values_filled += 1
+				values_filled |= { current }
+				handle(current not_in values_filled, "not there??")
+				current_action = .checking_key
+				pos = eol-1
 			}
-			offset = pos
-			current_line += 1
-		case .looking_for_title:
+		}
+		if yaml_end {
+			if values_filled >= required_values {}
+			else do fmt.printfln("missing: %v", required_values &~ values_filled)
 		}
 	}
 
