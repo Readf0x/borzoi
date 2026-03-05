@@ -23,14 +23,14 @@ cat :: proc() {
 		} else do body = parse_markdown(body)
 
 		assign_str: string
-		if len(issue.assignees[0]) != 0 {
+		if len(issue.assignees) != 0 && len(issue.assignees[0]) != 0 {
 			assign_str = fmt.bprintf(make([]byte, 512),
 				"  Assigned to: %s%s%s",
 				RESET, strings.join(issue.assignees, BRIGHT_BLACK + ", " + RESET), BRIGHT_BLACK
 			)
 		}
 		label_str: string
-		if len(issue.labels[0]) != 0 {
+		if len(issue.labels) != 0 && len(issue.labels[0]) != 0 {
 			label_str = fmt.bprintf(make([]byte, 512),
 				"  Labels: %s%s%s",
 				YELLOW, strings.join(issue.labels, BRIGHT_BLACK + ", " + YELLOW), BRIGHT_BLACK
