@@ -20,10 +20,13 @@ rec {
         ({
           projectName,
         }: rec {
-          devShells.default = pkgs.mkShell {
-            packages = with pkgs; [
-              odin
-            ];
+          devShells = {
+            default = pkgs.mkShell {
+              packages = with pkgs; [ odin ];
+            };
+            debug = pkgs.mkShell {
+              packages = with pkgs; [ odin packages.default ];
+            };
           };
           packages = {
             ${projectName} = pkgs.stdenv.mkDerivation (final: {
