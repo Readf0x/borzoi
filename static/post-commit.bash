@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Skip if we're already in an amend operation (prevents double-running)
 if [ -n "$BORZOI_AMENDING" ]; then
