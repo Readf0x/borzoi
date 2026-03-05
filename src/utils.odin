@@ -1,5 +1,6 @@
 package main
 
+import "base:runtime"
 import "core:os/os2"
 import "core:strings"
 import "core:fmt"
@@ -49,10 +50,9 @@ start_process :: proc(command: []string, allocator := context.allocator) -> os2.
 	pr, err := os2.process_start(os2.Process_Desc{
 		".", command, env, os2.stderr, os2.stdout, nil
 	})
-	if err != os2.ERROR_NONE {
-		return err
-	}
+	if err != os2.ERROR_NONE do return err
 	_, _ = os2.process_wait(pr)
+	err = os2.process_close(pr)
 	return os2.ERROR_NONE
 }
 
@@ -65,14 +65,10 @@ process_out :: proc(command: []string, allocator := context.allocator) -> (stdou
 
 process_custom :: proc(desc: os2.Process_Desc) -> os2.Error {
 	pr, err := os2.process_start(desc)
-	if err != os2.ERROR_NONE {
-		return err
-	}
+	if err != os2.ERROR_NONE do return err
 	_, _ = os2.process_wait(pr)
 	err = os2.process_close(pr)
-	if err != os2.ERROR_NONE {
-		return err
-	}
+	if err != os2.ERROR_NONE do return err
 	return os2.ERROR_NONE
 }
 
@@ -90,21 +86,39 @@ editor :: proc(path: string) {
 issue_exists :: proc(issue: string) -> string {
 	path := strings.concatenate({ issue, ".md" })
 	_, err := os2.stat(path, context.allocator)
-	if err != os2.ERROR_NONE {
-		switch err {
+	handle(err != os2.ERROR_NONE, proc(err: rawptr) {
+		switch (cast (^os2.Error) err)^ {
 		case .Not_Exist:
 			fmt.println("Issue doesn't exist")
 		case:
 			fmt.println(err)
 		}
 		os.exit(1)
-	}
+	}, &err)
 	return path
 }
 
-handle :: proc(when_this: bool, err: any, loc := #caller_location) {
-	assert(!when_this, fmt.bprintf(make([]byte, 256), "%v", err), loc)
+handle_any :: #force_inline proc(when_this: bool, err: any, loc := #caller_location) {
+	when ODIN_DEBUG {
+		assert(!when_this, fmt.bprintf(make([]byte, 256), "%v", err), loc)
+	}
+	when !ODIN_DEBUG {
+		if when_this {
+			fmt.printfln("%v", err)
+			os.exit(1)
+		}
+	}
 }
+handle_proc :: #force_inline proc(when_this: bool, callback: proc(user_data: rawptr), user_data: rawptr, loc := #caller_location) {
+	if when_this {
+		when ODIN_DEBUG do fmt.printfln("%v", loc)
+		#force_inline callback(user_data)
+		when ODIN_DEBUG do runtime.trap()
+		when !ODIN_DEBUG do os.exit(1)
+	}
+}
+
+handle :: proc{ handle_any, handle_proc }
 
 // handlef :: proc(assertion:bool, format: string, err: any, loc := #caller_location) {
 // 	assert(assertion, fmt.bprintf(make([]byte, 256), format, err), loc)

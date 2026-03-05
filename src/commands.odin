@@ -47,7 +47,7 @@ cat :: proc() {
 				BRIGHT_BLACK, RESET, status, BRIGHT_BLACK,
 				RESET, issue.author, BRIGHT_BLACK,
 				RESET, issue.priority, BRIGHT_BLACK,
-				RESET, format_timestamp(issue.time),
+				RESET, format_timestamp(issue.time.time),
 
 				issue.body,
 			)
@@ -57,9 +57,18 @@ cat :: proc() {
 	}
 }
 
+// Issue(4BF8): Implement close command
 close :: proc() {
-	// Issue(4BF8): Implement close command
-	fmt.println("WIP")
+	handle(len(os.args) < 3, "Missing id")
+	buf := make([]byte, 7)
+	for idstr in os.args[2:] {
+		issue := issue_from_idstr(strings.to_upper(idstr))
+		handle(issue.status == .Closed || issue.status == .Wontfix, "Already closed.")
+		issue.status = .Closed
+		str := issue_to_string(issue)
+		err := os2.write_entire_file(fmt.bprintf(buf, "%4X.md", issue.id), transmute ([]byte) str)
+		handle(err != os2.ERROR_NONE, err)
+	}
 }
 
 list :: proc() {
@@ -113,7 +122,7 @@ list :: proc() {
 				id, sep,
 				issue.title, strings.repeat(" ", max_title - len(issue.title)), sep,
 				status_string, strings.repeat(" ", 3 - (status_string_len - 4)), sep,
-				format_timestamp(issue.time),
+				format_timestamp(issue.time.time),
 			}),
 		)
 		buf = { 0, 0, 0, 0 }
@@ -155,8 +164,9 @@ new :: proc() {
 		}
 	}
 
-	time, _ := time.time_to_rfc3339(time.now(), 0)
+	timestr, _ := time.time_to_rfc3339(time.now(), 0, false)
 
+	// Issue(32D0): Use issue_to_string in new
 	file_err := os2.write_entire_file(path,
 		transmute ([]byte)strings.concatenate({
 			"# \n"+
@@ -165,7 +175,7 @@ new :: proc() {
 			cast (string) stdout,
 			"- PRIORI: 1\n",
 			"- CRDATE: ",
-			time,
+			timestr,
 			"\n",
 		})
 	)
@@ -175,6 +185,14 @@ new :: proc() {
 
 commit :: proc() {
 	env, _ := os2.environ(context.allocator)
+
+	porcelain, p_err := process_out({ "git", "status", "--porcelain", "." })
+	handle(p_err != os2.ERROR_NONE, p_err)
+
+	if len(porcelain) == 0 {
+		fmt.println("Nothing to commit")
+		os.exit(1)
+	}
 
 	pipe_r, pipe_w, err := os2.pipe()
 	handle(err != os2.ERROR_NONE, err)
@@ -196,9 +214,6 @@ commit :: proc() {
 		"..", { "git", "reset" }, env, os2.stderr, nil, nil
 	})
 	handle(err != os2.ERROR_NONE, err)
-
-	porcelain, p_err := process_out({ "git", "status", "--porcelain", "." })
-	handle(p_err != os2.ERROR_NONE, p_err)
 
 	edited := make([dynamic]string, 0, 8)
 	created := make([dynamic]string, 0, 8)
